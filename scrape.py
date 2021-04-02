@@ -134,12 +134,19 @@ def getAllAnimeLinks(start_page=0):
             break
     return links
 
+def writeToFile(chunks):
+    for count, chunk in enumerate(chunks):  # each chunk has 5 json data
+        filename = f"anime_{count}.json"
+        with open(filename, 'w', encoding='utf-8') as f:
+            for i, c in enumerate(chunk):  # loop thru all the 5 json data
+                url = f"https://www.imdb.com{c}"
+                movie_details = getMovieDetails(url)
+                json.dump(movie_details, f, sort_keys=True, indent=4)
+
 links = getAllAnimeLinks(138)
-for link in links:
-    url = f"https://www.imdb.com{link}"
-    movie_details = getMovieDetails(url)
-    print(json.dumps(movie_details, sort_keys=True, indent=4))  # to pretty print
-    
+chunks = [links[x:x+5] for x in range(0, len(links), 5)]   
+writeToFile(chunks)             
+
 # r = requests.get(url="https://www.imdb.com/search/keyword/?keywords=anime&page=1", stream=True)
 # soup = BeautifulSoup(r.text, 'html.parser')
 # res = soup.find_all("div",{"class":"lister-item mode-detail"})
