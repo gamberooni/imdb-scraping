@@ -43,9 +43,9 @@
       environment:
         &airflow-common-env
         AIRFLOW__CORE__EXECUTOR: CeleryExecutor
-        AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
-        AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
-        AIRFLOW__CELERY__BROKER_URL: redis://:@redis:6379/0
+        AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow_postgres/airflow
+        AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@airflow_postgres/airflow
+        AIRFLOW__CELERY__BROKER_URL: redis://:@airflow_redis:6379/0
         AIRFLOW__CORE__FERNET_KEY: ''
         AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
         AIRFLOW__CORE__LOAD_EXAMPLES: 'true'
@@ -55,40 +55,48 @@
         - ./airflow/plugins:/opt/airflow/plugins
       user: "${AIRFLOW_UID:-50000}:${AIRFLOW_GID:-50000}"
       depends_on:
-        redis:
+        airflow_redis:
           condition: service_healthy
-        postgres:
+        airflow_postgres:
           condition: service_healthy
+
     
     services:
-      postgres:
+      airflow_postgres:
         image: postgres:13
+        container_name: airflow_postgres
         environment:
           POSTGRES_USER: airflow
           POSTGRES_PASSWORD: airflow
           POSTGRES_DB: airflow
         volumes:
-          - postgres-db-volume:/var/lib/postgresql/data
+          - airflow-postgres-volume:/var/lib/postgresql/data
         healthcheck:
           test: ["CMD", "pg_isready", "-U", "airflow"]
           interval: 5s
           retries: 5
         restart: always
+        networks:
+          - imdb-scraping
     
-      redis:
+      airflow_redis:
         image: redis:latest
+        container_name: airflow_redis
         ports:
-          - 6379:6379
+          - 6378:6379
         healthcheck:
           test: ["CMD", "redis-cli", "ping"]
           interval: 5s
           timeout: 30s
           retries: 50
         restart: always
+        networks:
+          - imdb-scraping
     
       airflow-webserver:
         <<: *airflow-common
         command: webserver
+        container_name: airflow_webserver
         ports:
           - 8080:8080
         healthcheck:
@@ -97,19 +105,28 @@
           timeout: 10s
           retries: 5
         restart: always
+        networks:
+          - imdb-scraping
     
       airflow-scheduler:
         <<: *airflow-common
+        container_name: airflow_scheduler
         command: scheduler
         restart: always
+        networks:
+          - imdb-scraping
     
       airflow-worker:
         <<: *airflow-common
+        container_name: airflow_worker
         command: celery worker
         restart: always
+        networks:
+          - imdb-scraping
     
       airflow-init:
         <<: *airflow-common
+        container_name: airflow_init
         command: version
         environment:
           <<: *airflow-common-env
@@ -117,9 +134,12 @@
           _AIRFLOW_WWW_USER_CREATE: 'true'
           _AIRFLOW_WWW_USER_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME:-airflow}
           _AIRFLOW_WWW_USER_PASSWORD: ${_AIRFLOW_WWW_USER_PASSWORD:-airflow}
+        networks:
+          - imdb-scraping
     
       flower:
         <<: *airflow-common
+        container_name: airflow_flower
         command: celery flower
         ports:
           - 5555:5555
@@ -129,6 +149,14 @@
           timeout: 10s
           retries: 5
         restart: always
+        networks:
+          - imdb-scraping
     
     volumes:
-      postgres-db-volume:
+      airflow-postgres-volume:
+
+    networks:
+      imdb-scraping:
+        external:
+          name: imdb-scraping
+
