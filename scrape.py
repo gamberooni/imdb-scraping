@@ -1,9 +1,13 @@
 import requests
 from bs4 import BeautifulSoup
 import json
-
-
+from minio import Minio
 import re
+import os
+import datetime
+import shutil
+
+
 def getCrewData(url):
     crew_data = {
         "crew": []
@@ -134,18 +138,46 @@ def getAllAnimeLinks(start_page=0):
             break
     return links
 
-def writeToFile(chunks):
+def writeToFile(chunks, folderName):
     for count, chunk in enumerate(chunks):  # each chunk has 5 json data
-        filename = f"anime_{count}.json"
+        filename = f"{folderName}/anime_{count}.json"
         with open(filename, 'w', encoding='utf-8') as f:
             for i, c in enumerate(chunk):  # loop thru all the 5 json data
                 url = f"https://www.imdb.com{c}"
                 movie_details = getMovieDetails(url)
                 json.dump(movie_details, f, sort_keys=True, indent=4)
 
+def uploadToMinio(bucketName, folderName):
+    for filename in os.listdir(folderName):
+        if filename.endswith(".json"):
+            f = os.path.join(folderName, filename)
+            client.fput_object(bucketName, f, f)
+        else:
+            continue
+
+folderName = str(datetime.datetime.now().date())
+try:
+    os.mkdir(folderName)
+except:
+    shutil.rmtree(folderName)
+    os.mkdir(folderName)
+
+client = Minio(
+    "localhost:9000",
+    access_key="admin",
+    secret_key="password",
+    secure=False,
+)
+
+bucketName = "imdb"
+assert client.bucket_exists(bucketName), f"Bucket '{bucketName}' does not exist."
+
 links = getAllAnimeLinks(138)
 chunks = [links[x:x+5] for x in range(0, len(links), 5)]   
-writeToFile(chunks)             
+writeToFile(chunks, folderName) 
+uploadToMinio(bucketName, folderName)            
+
+
 
 # r = requests.get(url="https://www.imdb.com/search/keyword/?keywords=anime&page=1", stream=True)
 # soup = BeautifulSoup(r.text, 'html.parser')
