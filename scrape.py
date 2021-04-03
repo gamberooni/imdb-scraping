@@ -64,11 +64,24 @@ def getMovieDetails(url):
     else:
         data["isSeries"] = False
 
-    # additional details
-    subtext = soup.find("div",{'class':'subtext'})
-    data["subtext"] = ""
-    for i in subtext.contents:
-        data["subtext"] += i.string.strip()
+    # duration
+    data["duration"] = soup.find("time").string.strip()
+
+    # genre
+    data["genre"] = []
+    genre = soup.find("div", {"class": "subtext"}).find_all("a", href=True)[:-1]
+    for g in genre:
+        data["genre"].append(re.search(r">.*<\/a>", str(g)).group()[1:-4])
+
+    # release date
+    release_date = soup.find("div", {"class": "subtext"}).find_all("a", href=True)[-1]
+    data["release_date"] = release_date.string.strip()
+
+    # movie rated
+    subtext = soup.find("div", {"class": "subtext"})
+    movie_rated = subtext.text.split()[0]
+    # print(movie_rated.text.split())
+    data["movie_rated"] = movie_rated
 
     # summary
     summary_text = soup.find("div",{'class':'summary_text'})
@@ -91,15 +104,16 @@ aot_url = "https://www.imdb.com/title/tt2560140/"
 dsmugen_url = "https://www.imdb.com/title/tt11032374/"
 
 # data = {}
-# r = requests.get(url=dsmugen_url)
+# r = requests.get(url=aot_url)
 # # Create a BeautifulSoup object
 # soup = BeautifulSoup(r.text, 'html.parser')
 
 # print(soup.find_all('rating'))
 
-# dsmugen_details = getMovieDetails(dsmugen_url)
-# dsmugen_crew = getCrewData(dsmugen_url)
-# print(json.dumps(dsmugen_details, sort_keys=True, indent=4))  # to pretty print
+details = getMovieDetails(dsmugen_url)
+print(json.dumps(details, sort_keys=True, indent=4))  # to pretty print
+
+# crew = getCrewData(dsmugen_url)
 # print(json.dumps(dsmugen_crew, sort_keys=True, indent=4))  
 
 def getAllAnimeTitles(start_page=0):
@@ -121,6 +135,10 @@ def getAllAnimeTitles(start_page=0):
     return titles
 
 def getAllAnimeLinks(start_page=0):
+    '''
+    get all the links of all titles that has the keyword "anime"
+    by browsing page by page in imdb's search page
+    '''
     i = start_page
     links = []
     while True:
@@ -139,6 +157,11 @@ def getAllAnimeLinks(start_page=0):
     return links
 
 def writeToFile(chunks, folderName):
+    '''
+    for each chunk (metadata of 5 titles in json format),
+    dump them into one .json file and store that .json file
+    in the folder which has the name of today's date
+    '''
     for count, chunk in enumerate(chunks):  # each chunk has 5 json data
         filename = f"{folderName}/anime_{count}.json"
         with open(filename, 'w', encoding='utf-8') as f:
@@ -148,6 +171,9 @@ def writeToFile(chunks, folderName):
                 json.dump(movie_details, f, sort_keys=True, indent=4)
 
 def uploadToMinio(bucketName, folderName):
+    '''
+    upload all the .json files in the folder to minio
+    '''
     for filename in os.listdir(folderName):
         if filename.endswith(".json"):
             f = os.path.join(folderName, filename)
@@ -155,29 +181,28 @@ def uploadToMinio(bucketName, folderName):
         else:
             continue
 
-folderName = str(datetime.datetime.now().date())
+folderName = str(datetime.datetime.now().date())  # e.g. 2021-04-03
 try:
-    os.mkdir(folderName)
+    os.mkdir(folderName)  # will throw exception if the folder already exists
 except:
-    shutil.rmtree(folderName)
+    shutil.rmtree(folderName)  # delete the folder and recreate it
     os.mkdir(folderName)
 
-client = Minio(
-    "localhost:9000",
-    access_key="admin",
-    secret_key="password",
-    secure=False,
-)
+# client = Minio(
+#     "localhost:9000",
+#     access_key="admin",
+#     secret_key="password",
+#     secure=False,
+# )
 
-bucketName = "imdb"
-assert client.bucket_exists(bucketName), f"Bucket '{bucketName}' does not exist."
+# bucketName = "imdb"
+# assert client.bucket_exists(bucketName), f"Bucket '{bucketName}' does not exist."
 
-links = getAllAnimeLinks(138)
-chunks = [links[x:x+5] for x in range(0, len(links), 5)]   
-writeToFile(chunks, folderName) 
-uploadToMinio(bucketName, folderName)            
-
-
+# links = getAllAnimeLinks(138)
+# # from the whole list of the links of all titles, put 5 titles' metadata into one chunk
+# chunks = [links[x:x+5] for x in range(0, len(links), 5)]  
+# writeToFile(chunks, folderName) 
+# uploadToMinio(bucketName, folderName)            
 
 # r = requests.get(url="https://www.imdb.com/search/keyword/?keywords=anime&page=1", stream=True)
 # soup = BeautifulSoup(r.text, 'html.parser')
