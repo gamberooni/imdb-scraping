@@ -110,8 +110,8 @@ dsmugen_url = "https://www.imdb.com/title/tt11032374/"
 
 # print(soup.find_all('rating'))
 
-details = getMovieDetails(dsmugen_url)
-print(json.dumps(details, sort_keys=True, indent=4))  # to pretty print
+# details = getMovieDetails(dsmugen_url)
+# print(json.dumps(details, sort_keys=True, indent=4))  # to pretty print
 
 # crew = getCrewData(dsmugen_url)
 # print(json.dumps(dsmugen_crew, sort_keys=True, indent=4))  
@@ -156,6 +156,21 @@ def getAllAnimeLinks(start_page=0):
             break
     return links
 
+def getAllGenres():
+    genres = []
+    url = f"https://www.imdb.com/search/title/"
+    r = requests.get(url=url, stream=True)
+    soup = BeautifulSoup(r.text, 'html.parser')
+    res = soup.find_all("tbody")
+    for r in res:
+        r_td = r.find_all("td")
+        for td in r_td:
+            genre = td.find("input", {"name": "genres"})
+            if genre:
+                genres.append(genre.get("value"))
+    return genres
+ 
+
 def writeToFile(chunks, folderName):
     '''
     for each chunk (metadata of 5 titles in json format),
@@ -164,11 +179,16 @@ def writeToFile(chunks, folderName):
     '''
     for count, chunk in enumerate(chunks):  # each chunk has 5 json data
         filename = f"{folderName}/anime_{count}.json"
+        json_list = []
         with open(filename, 'w', encoding='utf-8') as f:
             for i, c in enumerate(chunk):  # loop thru all the 5 json data
                 url = f"https://www.imdb.com{c}"
-                movie_details = getMovieDetails(url)
-                json.dump(movie_details, f, sort_keys=True, indent=4)
+                json_list.append(getMovieDetails(url))
+                # movie_details = getMovieDetails(url)
+                # json.dump(movie_details, f, sort_keys=True, indent=4)
+            movie_details = json.dumps(json_list)
+            json.dump(movie_details, f, sort_keys=True, indent=4)
+
 
 def uploadToMinio(bucketName, folderName):
     '''
@@ -188,21 +208,25 @@ except:
     shutil.rmtree(folderName)  # delete the folder and recreate it
     os.mkdir(folderName)
 
-# client = Minio(
-#     "localhost:9000",
-#     access_key="admin",
-#     secret_key="password",
-#     secure=False,
-# )
+# genres = getAllGenres()
+# print(genres)
+# print(len(genres))
 
-# bucketName = "imdb"
-# assert client.bucket_exists(bucketName), f"Bucket '{bucketName}' does not exist."
+client = Minio(
+    "localhost:9000",
+    access_key="admin",
+    secret_key="password",
+    secure=False,
+)
 
-# links = getAllAnimeLinks(138)
-# # from the whole list of the links of all titles, put 5 titles' metadata into one chunk
-# chunks = [links[x:x+5] for x in range(0, len(links), 5)]  
-# writeToFile(chunks, folderName) 
-# uploadToMinio(bucketName, folderName)            
+bucketName = "imdb"
+assert client.bucket_exists(bucketName), f"Bucket '{bucketName}' does not exist."
+
+links = getAllAnimeLinks(138)
+# from the whole list of the links of all titles, put 5 titles' metadata into one chunk
+chunks = [links[x:x+5] for x in range(0, len(links), 5)]  
+writeToFile(chunks, folderName) 
+uploadToMinio(bucketName, folderName)            
 
 # r = requests.get(url="https://www.imdb.com/search/keyword/?keywords=anime&page=1", stream=True)
 # soup = BeautifulSoup(r.text, 'html.parser')
