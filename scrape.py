@@ -68,10 +68,10 @@ def getMovieDetails(url):
     data["duration"] = soup.find("time").string.strip()
 
     # genre
-    data["genre"] = []
+    data["genres"] = []
     genre = soup.find("div", {"class": "subtext"}).find_all("a", href=True)[:-1]
     for g in genre:
-        data["genre"].append(re.search(r">.*<\/a>", str(g)).group()[1:-4])
+        data["genres"].append(re.search(r">.*<\/a>", str(g)).group()[1:-4])
 
     # release date
     release_date = soup.find("div", {"class": "subtext"}).find_all("a", href=True)[-1]
