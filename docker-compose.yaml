@@ -33,6 +33,27 @@ services:
     healthcheck:
       test: pg_isready -U admin -d imdb -h localhost -q
 
+  imdb_rabbitmq:
+    image: rabbitmq:3.8.14-management-alpine
+    container_name: imdb_rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=password
+    ports:
+        - 5672:5672
+        - 15672:15672
+    volumes:
+        - rabbitmq-volume-lib:/var/lib/rabbitmq/
+        - rabbitmq-volume-log:/var/log/rabbitmq
+    networks:
+        - imdb-scraping
+    healthcheck:
+      test: rabbitmq-diagnostics -q status
+
+networks:
+  rabbitmq_go_net:
+    driver: bridge
+
 networks:
   imdb-scraping:
     external:
@@ -41,3 +62,5 @@ networks:
 volumes:
     imdb-postgres-volume:
     minio-volume:
+    rabbitmq-volume-lib:
+    rabbitmq-volume-log:

@@ -6,6 +6,7 @@ import re
 import os
 import datetime
 import shutil
+import time
 
 
 def getCrewData(url):
@@ -45,12 +46,20 @@ def getMovieDetails(url):
     data["title"] = title.string
 
     # rating
-    ratingValue = soup.find("span", {"itemprop" : "ratingValue"})
-    data["ratingValue"] = ratingValue.string
+    try:
+        ratingValue = soup.find("span", {"itemprop" : "ratingValue"})
+        data["ratingValue"] = ratingValue.string
+    except:
+        data["ratingValue"] = None
+        print(f"Rating value is None for url {url}")
 
     # no of rating given
-    ratingCount = soup.find("span", {"itemprop" : "ratingCount"})
-    data["ratingCount"] = ratingCount.string
+    try: 
+        ratingCount = soup.find("span", {"itemprop" : "ratingCount"})
+        data["ratingCount"] = ratingCount.string
+    except:
+        data["ratingCount"] = None
+        print(f"Rating count is None for url {url}")        
 
     # name
     titleName = soup.find("div",{'class':'titleBar'}).find("h1")
@@ -58,63 +67,73 @@ def getMovieDetails(url):
 
     # is_series
     # check if the string "Episodes" is present
-    isSeries = soup.find("div", {"class": "article"}).find("h2")
-    if isSeries:
+    try: 
+        isSeries = soup.find("div", {"class": "article"}).find("h2")
         data["isSeries"] = True
-    else:
+    except:
         data["isSeries"] = False
 
     # duration
-    data["duration"] = soup.find("time").string.strip()
+    try:
+        data["duration"] = soup.find("time").string.strip()
+    except:
+        data["duration"] = None 
+        print(f"Duration is None for url {url}")
 
     # genre
-    data["genres"] = []
-    genre = soup.find("div", {"class": "subtext"}).find_all("a", href=True)[:-1]
-    for g in genre:
-        data["genres"].append(re.search(r">.*<\/a>", str(g)).group()[1:-4])
+    try:
+        data["genres"] = []
+        genre = soup.find("div", {"class": "subtext"}).find_all("a", href=True)[:-1]
+        for g in genre:
+            data["genres"].append(re.search(r">.*<\/a>", str(g)).group()[1:-4])
+    except:
+        data["genres"] = None
+        print(f"Genres is None for url {url}")
 
     # release date
-    release_date = soup.find("div", {"class": "subtext"}).find_all("a", href=True)[-1]
-    data["release_date"] = release_date.string.strip()
+    try:
+        release_date = soup.find("div", {"class": "subtext"}).find_all("a", href=True)[-1]
+        data["release_date"] = release_date.string.strip()
+    except:
+        data["release_date"] = None
+        print(f"Release date is None for url {url}")
 
     # movie rated
-    subtext = soup.find("div", {"class": "subtext"})
-    movie_rated = subtext.text.split()[0]
-    # print(movie_rated.text.split())
-    data["movie_rated"] = movie_rated
+    # subtext = soup.find("div", {"class": "subtext"})
+    # print(f"subtext: {subtext}")
+    # print(f"subtext text: {subtext.text}")
+    # movie_rated = subtext.text.split()[0]
+
+    # print(movie_rated)
+    # # print(movie_rated.text.split())
+
+    # data["movie_rated"] = movie_rated
 
     # summary
-    summary_text = soup.find("div",{'class':'summary_text'})
-    data["summary_text"] = summary_text.string.strip()
+    try:
+        summary_text = soup.find("div",{'class':'summary_text'})
+        data["summary_text"] = summary_text.text
+    except:
+        data["summary_text"] = None
+        print(f"Summary text is None for url {url}")
 
-    credit_summary_item = soup.find_all("div",{'class':'credit_summary_item'})
-    data["credits"] = {}
-    for i in credit_summary_item:
-        item = i.find("h4")
-        names = i.find_all("a")
-        data["credits"][item.string] = []
-        for i in names:
-            data["credits"][item.string].append({
-                "link": i["href"],
-                "name": i.string
-            })
+    try:
+        credit_summary_item = soup.find_all("div",{'class':'credit_summary_item'})
+        data["credits"] = {}
+        for i in credit_summary_item:
+            item = i.find("h4")
+            names = i.find_all("a")
+            data["credits"][item.string] = []
+            for i in names:
+                data["credits"][item.string].append({
+                    "link": i["href"],
+                    "name": i.string
+                })
+    except:
+        data["credits"] = None
+        print(f"Credits is None for url {url}")
+
     return data
-
-aot_url = "https://www.imdb.com/title/tt2560140/"
-dsmugen_url = "https://www.imdb.com/title/tt11032374/"
-
-# data = {}
-# r = requests.get(url=aot_url)
-# # Create a BeautifulSoup object
-# soup = BeautifulSoup(r.text, 'html.parser')
-
-# print(soup.find_all('rating'))
-
-# details = getMovieDetails(dsmugen_url)
-# print(json.dumps(details, sort_keys=True, indent=4))  # to pretty print
-
-# crew = getCrewData(dsmugen_url)
-# print(json.dumps(dsmugen_crew, sort_keys=True, indent=4))  
 
 def getAllAnimeTitles(start_page=0):
     i = start_page
@@ -134,7 +153,7 @@ def getAllAnimeTitles(start_page=0):
             break
     return titles
 
-def getAllAnimeLinks(start_page=0):
+def getAllAnimeLinks(start_page=1):
     '''
     get all the links of all titles that has the keyword "anime"
     by browsing page by page in imdb's search page
@@ -179,6 +198,7 @@ def writeToFile(chunks, folderName):
     '''
     for count, chunk in enumerate(chunks):  # each chunk has 5 json data
         filename = f"{folderName}/anime_{count}.json"
+        print(f"Writing to file '{filename}")
         json_list = []
         with open(filename, 'w', encoding='utf-8') as f:
             for i, c in enumerate(chunk):  # loop thru all the 5 json data
@@ -222,11 +242,13 @@ client = Minio(
 bucketName = "imdb"
 assert client.bucket_exists(bucketName), f"Bucket '{bucketName}' does not exist."
 
-links = getAllAnimeLinks(138)
+start_time = time.time()  # for timing
+links = getAllAnimeLinks()
 # from the whole list of the links of all titles, put 5 titles' metadata into one chunk
 chunks = [links[x:x+5] for x in range(0, len(links), 5)]  
-writeToFile(chunks, folderName) 
-uploadToMinio(bucketName, folderName)            
+writeToFile(chunks, folderName)  # can use rabbitmq here
+uploadToMinio(bucketName, folderName)  # and here
+print("--- Job took %s seconds ---" % (time.time() - start_time))
 
 # r = requests.get(url="https://www.imdb.com/search/keyword/?keywords=anime&page=1", stream=True)
 # soup = BeautifulSoup(r.text, 'html.parser')
@@ -235,3 +257,13 @@ uploadToMinio(bucketName, folderName)
 # for r in res:
 #     titles.append(r.find("a")['href'])
 # print(titles)
+
+aot_url = "https://www.imdb.com/title/tt2560140/"
+dsmugen_url = "https://www.imdb.com/title/tt11032374/"
+test_url = "https://www.imdb.com/title/tt13370404/"
+
+# details = getMovieDetails(test_url)
+# print(json.dumps(details, sort_keys=True, indent=4))  # to pretty print
+
+# crew = getCrewData(dsmugen_url)
+# print(json.dumps(dsmugen_crew, sort_keys=True, indent=4))  
