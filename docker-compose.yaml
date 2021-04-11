@@ -1,9 +1,9 @@
 version: '3.5'
 
 services:
-  minio:
+  imdb_minio:
     image: minio/minio:RELEASE.2021-03-04T00-53-13Z
-    container_name: minio
+    container_name: imdb_minio
     volumes:
       - minio-volume:/data
     environment:
@@ -40,19 +40,27 @@ services:
       - RABBITMQ_DEFAULT_USER=admin
       - RABBITMQ_DEFAULT_PASS=password
     ports:
-        - 5672:5672
-        - 15672:15672
+      - 5672:5672
+      - 15672:15672
     volumes:
-        - rabbitmq-volume-lib:/var/lib/rabbitmq/
-        - rabbitmq-volume-log:/var/log/rabbitmq
+      - rabbitmq-volume-lib:/var/lib/rabbitmq
+      - rabbitmq-volume-log:/var/log/rabbitmq
     networks:
-        - imdb-scraping
+      - imdb-scraping
+    restart: always
     healthcheck:
       test: rabbitmq-diagnostics -q status
 
-networks:
-  rabbitmq_go_net:
-    driver: bridge
+  imdb_redis:
+    image: redis:6.2.1-alpine3.13
+    container_name: imdb_redis
+    ports: 
+      - 6379:6379
+    networks:
+      - imdb-scraping
+    restart: always
+    healthcheck:
+      test: redis-cli ping
 
 networks:
   imdb-scraping:
