@@ -1,20 +1,29 @@
 import psycopg2
-import os
-from dbconf import *
+from conf import POSTGRES_HOSTNAME, POSTGRES_PORT, POSTGRES_DATABASE, POSTGRES_USER, POSTGRES_PASSWORD
 from sql import *
+import logging
 
-conn = psycopg2.connect(host=HOSTNAME, port=PORT, database=DBNAME, user=USERNAME, password=PASSWORD)
+logging.basicConfig()
+logging.getLogger().setLevel(logging.INFO)
+
+conn = psycopg2.connect(
+    host=POSTGRES_HOSTNAME, 
+    port=POSTGRES_PORT, 
+    database=POSTGRES_DATABASE, 
+    user=POSTGRES_USER, 
+    password=POSTGRES_PASSWORD
+    )
 cursor = conn.cursor()
 
 cursor.execute(drop_schema)  # drop the schema if exists
-print(f"Dropped schema '{schemaName}'")
+logging.info(f"Dropped schema '{schemaName}'")
 cursor.execute(create_schema)  # create the schema
-print(f"Created schema '{schemaName}'")
+logging.info(f"Created schema '{schemaName}'")
 cursor.execute(set_search_path)  # set search path to the schema
-print(f"Set search path to schema '{schemaName}'")
+logging.info(f"Set search path to schema '{schemaName}'")
 conn.commit()
 
 for create_table in create_tables:
     cursor.execute(create_table)
 conn.commit()
-print("Finished creating tables")
+logging.info("Finished creating tables")

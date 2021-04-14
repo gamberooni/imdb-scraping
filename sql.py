@@ -1,4 +1,6 @@
-schemaName = "imdb"
+import os
+
+schemaName = os.getenv('SCHEMA_NAME', "imdb")
 
 drop_schema = f"DROP SCHEMA IF EXISTS {schemaName} CASCADE;"
 create_schema = f"CREATE SCHEMA IF NOT EXISTS {schemaName};"

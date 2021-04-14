@@ -1,24 +1,74 @@
-from celery import Celery
-import json
-import requests
 from bs4 import BeautifulSoup
+from celery import Celery
+from minio import Minio
+import re
+import requests
+import io
+import json
+import logging
+import os
+from conf import MINIO_URL, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, RABBITMQ_URI, REDIS_URI
 
-app = Celery('write_to_file', 
-                backend='redis://127.0.0.1:6379', 
-                broker='amqp://admin:password@localhost:5672')
 
-# @app.task
-# def gen_prime(x):
-#     multiples = []
-#     results = []
-#     for i in range(2, x+1):
-#         if i not in multiples:
-#             results.append(i)
-#             for j in range(i*i, x+1, i):
-#                 multiples.append(j)
-#     return results
+logging.basicConfig()
+logging.getLogger().setLevel(logging.INFO)
+
+app = Celery('tasks', 
+            backend=REDIS_URI, 
+            broker=RABBITMQ_URI)
+
+client = Minio(
+    MINIO_URL,
+    access_key=MINIO_ACCESS_KEY,
+    secret_key=MINIO_SECRET_KEY,
+    secure=False,
+)
+
+bucket_name = os.getenv('BUCKET_NAME', "imdb")  
+assert client.bucket_exists(bucket_name), f"Bucket '{bucket_name}' does not exist."
+
+def getCrewData(url):
+    crew_data = {
+        "crew": []
+    }
+    r = requests.get(url=url)
+
+    # Create a BeautifulSoup object
+    soup = BeautifulSoup(r.text, 'html.parser')
+
+    #page title
+    title = soup.find('title')
+    crew_data["title"] = title.string
+    cast_list = soup.find("table", {"class" : "cast_list"})
+
+    trows = cast_list.find_all('tr')
+
+    for tr in trows:
+        td = tr.find_all('td')
+        if len(td)==4:
+            row = [i.text for i in td]
+            crew_data["crew"].append({
+                "name":re.sub("[^a-zA-Z' ]+", '', row[1]).strip(),
+                "character":re.sub("[^a-zA-Z' ]+", '', row[3]).strip()
+            })
+    return crew_data
+
+def getAllGenres():
+    genres = []
+    url = f"https://www.imdb.com/search/title/"
+    r = requests.get(url=url, stream=True)
+    soup = BeautifulSoup(r.text, 'html.parser')
+    res = soup.find_all("tbody")
+    for r in res:
+        r_td = r.find_all("td")
+        for td in r_td:
+            genre = td.find("input", {"name": "genres"})
+            if genre:
+                genres.append(genre.get("value"))
+    return genres
 
 def getMovieDetails(url):
+    logging.info(f"Getting details for {url}")
     data = {}
     r = requests.get(url=url)
     # Create a BeautifulSoup object
@@ -118,84 +168,37 @@ def getMovieDetails(url):
 
     return data
 
-# @app.task
-# def writeToFile(chunks, folderName):
-#     '''
-#     for each chunk (metadata of 5 titles in json format),
-#     dump them into one .json file and store that .json file
-#     in the folder which has the name of today's date
-#     '''
-#     for count, chunk in enumerate(chunks):  # each chunk has 5 json data
-#         filename = f"{folderName}/anime_{count}.json"
-#         print(f"Writing to file '{filename}")
-#         json_list = []
-#         with open(filename, 'w', encoding='utf-8') as f:
-#             for i, c in enumerate(chunk):  # loop thru all the 5 json data
-#                 url = f"https://www.imdb.com{c}"
-#                 json_list.append(getMovieDetails(url))
-#                 # movie_details = getMovieDetails(url)
-#                 # json.dump(movie_details, f, sort_keys=True, indent=4)
-#             movie_details = json.dumps(json_list)
-#             json.dump(movie_details, f, sort_keys=True, indent=4)
+def put_json(bucket_name, object_name, d):
+    """
+    jsonify a dict and write it as object to the bucket
+    """
+    # prepare data and corresponding data stream
+    data = json.dumps(d).encode("utf-8")
+    data_stream = io.BytesIO(data)
+    data_stream.seek(0)
+
+    # put data as object into the bucket
+    client.put_object(
+        bucket_name=bucket_name,
+        object_name=object_name,
+        data=data_stream, 
+        length=len(data),
+        content_type="application/json"
+    )
 
 @app.task
-def writeToFile(chunk, filename):
+def writeToFile(chunk, object_name):
     '''
     for each chunk (metadata of 5 titles in json format),
     dump them into one .json file and store that .json file
     in the folder which has the name of today's date
     '''
-    json_list = []
-    with open(filename, 'w', encoding='utf-8') as f:
-        for c in chunk:  # loop thru all the 5 json data
-            url = f"https://www.imdb.com{c}"
-            json_list.append(getMovieDetails(url))
-            # movie_details = getMovieDetails(url)
-            # json.dump(movie_details, f, sort_keys=True, indent=4)
-        movie_details = json.dumps(json_list)
-        json.dump(movie_details, f, sort_keys=True, indent=4)
+    title_list = []
+    for link in chunk:  # loop thru all the 5 json data
+        url = f"https://www.imdb.com{link}"
+        title = getMovieDetails(url)
+        title_list.append(title)
 
-    # refactor this into no need to dump into file
-    # wrap json data of 5 titles into one json object, then upload to minio immediately
+    put_json(bucket_name, object_name, title_list)
+
     return 1    
-
-# @app.task
-# def getAllAnimeLinks(start_page=1):
-#     '''
-#     get all the links of all titles that has the keyword "anime"
-#     by browsing page by page in imdb's search page
-#     '''
-#     i = start_page
-#     links = []
-#     while True:
-#         print(f"Scraping page {i}...")
-#         url = f"https://www.imdb.com/search/keyword/?keywords=anime&page={i}"
-#         r = requests.get(url=url, stream=True)
-#         soup = BeautifulSoup(r.text, 'html.parser')
-#         res = soup.find_all("div",{"class":"lister-item mode-detail"})
-#         if res:
-#             for r in res:
-#                 links.append(r.find("a")['href'])
-#             i += 1
-#         else:
-#             print("No more links left...")
-#             break
-#     return links            
-    
-@app.task
-def getAnimeLinks(page):
-    '''
-    get all the links of all titles that has the keyword "anime"
-    of a particular page
-    '''
-    links = []
-    print(f"Scraping page {page}...")
-    url = f"https://www.imdb.com/search/keyword/?keywords=anime&page={page}"
-    r = requests.get(url=url, stream=True)
-    soup = BeautifulSoup(r.text, 'html.parser')
-    res = soup.find_all("div",{"class":"lister-item mode-detail"})
-    if res:
-        for r in res:
-            links.append(r.find("a")['href'])
-
-    return links            

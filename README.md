@@ -41,3 +41,7 @@ $ docker-compose -f docker-compose-airflow.yaml up -d
 username: airflow
 password: airflow
 ```
+
+## Before running scraping task
+1. Start celery workers
+> celery -A tasks:app workers -l info -P gevent
