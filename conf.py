@@ -20,5 +20,5 @@ REDIS_URI = f'redis://{REDIS_HOST}:{REDIS_PORT}'
 MINIO_ACCESS_KEY = os.getenv('MINIO_ACCESS_KEY', "admin") 
 MINIO_SECRET_KEY = os.getenv('MINIO_SECRET_KEY', "password") 
 MINIO_HOST = os.getenv('MINIO_HOST', "localhost") 
-MINIO_PORT = os.getenv('MINIO_PORT', "6379")
+MINIO_PORT = os.getenv('MINIO_PORT', "9000")
 MINIO_URL = f'{MINIO_HOST}:{MINIO_PORT}'

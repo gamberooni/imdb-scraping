@@ -63,7 +63,7 @@ create_titles_writers_tables = f"""
     """
 
 create_titles_genres_tables = f"""
-    CREATE TABLE IF NOT EXISTS titles_writers (
+    CREATE TABLE IF NOT EXISTS titles_genres (
         title_id INT REFERENCES titles (id),
         genre_id SMALLINT REFERENCES genres (id));
     """   
@@ -100,6 +100,38 @@ insert_into_genres = f"""
 insert_into_titles = f"""
     INSERT INTO titles (duration, is_series, name, rating_count, rating_value, release_date, summary_text)
     VALUES (%s, %s, %s, %s, %s, %s, %s);
+    """ 
+
+insert_into_titles_directors = f"""
+    INSERT INTO titles_directors (title_id, director_id)
+    SELECT t.id, d.id 
+    FROM titles t, directors d
+    WHERE t.name = %s
+        AND d.name = %s
+    """ 
+
+insert_into_titles_stars = f"""
+    INSERT INTO titles_stars (title_id, star_id)
+    SELECT t.id, s.id 
+    FROM titles t, stars s
+    WHERE t.name = %s
+        AND s.name = %s
+    """ 
+
+insert_into_titles_writers = f"""
+    INSERT INTO titles_writers (title_id, writer_id)
+    SELECT t.id, w.id 
+    FROM titles t, writers w
+    WHERE t.name = %s
+        AND w.name = %s
+    """ 
+
+insert_into_titles_genres = f"""
+    INSERT INTO titles_genres (title_id, genre_id)
+    SELECT t.id, g.id 
+    FROM titles t, genres g
+    WHERE t.name = %s
+        AND g.genre = %s
     """ 
 
 create_tables = [

@@ -1,5 +1,4 @@
 from bs4 import BeautifulSoup
-from minio import Minio
 from tasks import writeToFile
 import datetime
 import logging
@@ -77,7 +76,7 @@ def scrapeAndUpload(all_links, object_prefix):
 
 start_time = time.time()  # for timing
 
-all_links = getAllAnimeLinks(end_page=2)
+all_links = getAllAnimeLinks()
 object_prefix = str(datetime.datetime.now().date())  # e.g. 2021-04-03
 scrapeAndUpload(all_links, object_prefix)
 
