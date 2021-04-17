@@ -35,7 +35,7 @@ create_genres_table = f"""
 create_titles_table = f"""
     CREATE TABLE IF NOT EXISTS titles (
         id SERIAL PRIMARY KEY,
-        duration VARCHAR(10),
+        duration SMALLINT,
         is_series BOOLEAN,
         name VARCHAR(500) NOT NULL,
         rating_count INT,

@@ -6,8 +6,7 @@ import requests
 import io
 import json
 import logging
-import os
-from conf import MINIO_URL, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, RABBITMQ_URI, REDIS_URI
+from conf import BUCKET_NAME, MINIO_URL, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, RABBITMQ_URI, REDIS_URI
 
 
 logging.basicConfig()
@@ -24,7 +23,7 @@ client = Minio(
     secure=False,
 )
 
-bucket_name = os.getenv('BUCKET_NAME', "imdb")  
+bucket_name = BUCKET_NAME
 assert client.bucket_exists(bucket_name), f"Bucket '{bucket_name}' does not exist."
 
 def getCrewData(url):

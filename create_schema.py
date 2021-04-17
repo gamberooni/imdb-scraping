@@ -17,10 +17,13 @@ cursor = conn.cursor()
 
 cursor.execute(drop_schema)  # drop the schema if exists
 logging.info(f"Dropped schema '{schemaName}'")
+
 cursor.execute(create_schema)  # create the schema
 logging.info(f"Created schema '{schemaName}'")
+
 cursor.execute(set_search_path)  # set search path to the schema
 logging.info(f"Set search path to schema '{schemaName}'")
+
 conn.commit()
 
 for create_table in create_tables:
