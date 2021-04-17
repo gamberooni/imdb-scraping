@@ -103,7 +103,7 @@ def init_mp(target_func):
     results = manager.Queue()
 
     num_processes = mp.cpu_count()
-    pool = mp.Pool(processes=num_processes)
+    # pool = mp.Pool(processes=num_processes)
     processes = []
     # Initiate the worker processes
     for i in range(num_processes):

@@ -33,7 +33,6 @@ def kill_mp(num_processes, tasks, results):
     
     return to_return
 
-
 def init_mp(target_func):
     manager = mp.Manager()
     # Define a list (queue) for tasks and computation results
@@ -41,7 +40,7 @@ def init_mp(target_func):
     results = manager.Queue()
 
     num_processes = mp.cpu_count()
-    pool = mp.Pool(processes=num_processes)
+    # pool = mp.Pool(processes=num_processes)
     processes = []
     # Initiate the worker processes
     for i in range(num_processes):
@@ -87,13 +86,13 @@ def populate_db(process_name, tasks, results):
     print('[%s] evaluation routine starts' % process_name)            
     while True:
         object_name = tasks.get()
-        print(f"Processing object: {object_name}")
         if not isinstance(object_name, str):  # to indicate finished
             print('[%s] evaluation routine quits' % process_name)
                 # Indicate finished
             results.put(-1)
             break
         else:
+            print(f"Processing object: {object_name}")
             o = client.get_object(bucket_name, object_name)
             data = json.load(io.BytesIO(o.data))
 
@@ -111,7 +110,7 @@ def populate_db(process_name, tasks, results):
                     else:  # 26min
                         duration_hour = 0
                         duration_minute = int(duration.replace('min', '').strip())
-                duration = duration_hour * 60 + duration_minute   
+                    duration = duration_hour * 60 + duration_minute
                 is_series = item["isSeries"]
                 name = item["title"].strip()
                 try:
@@ -205,10 +204,7 @@ def populate_db(process_name, tasks, results):
 
     return
 
-if __name__ == "__main__":
-    logging.basicConfig()
-    logging.getLogger().setLevel(logging.INFO)
-
+def create_tasks():
     client = Minio(
         MINIO_URL,
         access_key=MINIO_ACCESS_KEY,
@@ -217,15 +213,8 @@ if __name__ == "__main__":
     )
 
     bucket_name = BUCKET_NAME
-    # if client.bucket_exists(bucket_name):  # if bucket exists
-    #     logging.info(f"Bucket '{bucket_name}' exists. Proceeding job.")
-    # else:
-    #     raise Exception(f"Bucket '{bucket_name}' does not exist. Aborting...")
-    start_time = time.time()  # for timing
 
-    processes, num_processes, tasks, results = init_mp(populate_db)
-
-    FILE_PREFIX = "2021-04-17/"
+    FILE_PREFIX = "2021-04-18/"
     # FILE_PREFIX = str(datetime.datetime.now().date())
     objects = client.list_objects(bucket_name=bucket_name, prefix=FILE_PREFIX)
     object_names = []
@@ -236,6 +225,21 @@ if __name__ == "__main__":
         tasks.put(obj)
 
     _ = kill_mp(num_processes, tasks, results)
+
+
+if __name__ == "__main__":
+    logging.basicConfig()
+    logging.getLogger().setLevel(logging.INFO)
+
+
+    # if client.bucket_exists(bucket_name):  # if bucket exists
+    #     logging.info(f"Bucket '{bucket_name}' exists. Proceeding job.")
+    # else:
+    #     raise Exception(f"Bucket '{bucket_name}' does not exist. Aborting...")
+    start_time = time.time()  # for timing
+
+    processes, num_processes, tasks, results = init_mp(populate_db)
+    create_tasks()
 
     #     # for d in data_dict:
     #     #     print(d.keys())
