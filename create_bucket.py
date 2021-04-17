@@ -21,6 +21,7 @@ def main():
     # create the bucket if not exists
     if client.bucket_exists(bucket_name):
         logging.info(f"Bucket '{bucket_name}' already exists.")
+        logging.info("Not creating new bucket.")
     else:
         client.make_bucket(bucket_name)
         logging.info(f"Created bucket '{bucket_name}'")

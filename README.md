@@ -12,7 +12,7 @@
 9. include link to bring dashboard user to the imdb website of that anime
 10. ~~use docker-compose to bring up these different containers~~
 11. airflow(scraping job + transformation here) - minio - postgres - superset/redash?
-12. ~~use rabbitmq and celery to parallelize jobs~~
+12. ~~use rabbitmq and celery, and multiprocessing module to parallelize jobs~~
 
 ## Starting Docker containers
 1. Create docker network

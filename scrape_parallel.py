@@ -4,6 +4,9 @@ import time
 import math
 import multiprocessing as mp
 import logging
+import datetime
+from tasks import writeToFile
+import itertools
 
 logging.basicConfig()
 logging.getLogger().setLevel(logging.INFO)
@@ -62,30 +65,8 @@ def getAllAnimeLinks(start_page=1, end_page=None):
     
     for p in range(start_page, end_page+1):
         tasks.put(p)
-        # links = getAnimeLinks(p)
-        # all_links.append(links)
-
-    # # Quit the worker processes by sending them -1
-    # for i in range(num_processes):
-    #     tasks.put(-1)
-
-    # num_finished_processes = 0
-    # while True:
-    #     all_links = results.get()
-    #     # Have a look at the results
-    #     if all_links == -1:
-    #         # Process has finished
-    #         num_finished_processes += 1
-
-    #         if num_finished_processes == num_processes:
-    #             break
-    #     else:
-    #         # Output result
-    #         print('Result:' + str(all_links))
 
     all_links = kill_mp(num_processes, tasks, results)
-
-    # all_links = list(itertools.chain(*all_links))  # merge all the lists into one list
 
     logging.info("Finished getting all anime links!")
 
@@ -141,35 +122,33 @@ def init_mp(target_func):
 
     return processes, num_processes, tasks, results    
 
+def scrapeAndUpload(all_links, object_prefix):
+    logging.info("Scrape and upload data to MinIO...")
+    
+    # from the whole list of the links of all titles, 
+    # put 5 titles' metadata into one chunk
+    chunks = [all_links[x:x+5] for x in range(0, len(all_links), 5)]
+
+    for count, chunk in enumerate(chunks):  # each chunk has 5 json data
+        object_name = f"{object_prefix}/anime_{count}.json"
+        logging.info(f"Writing to object '{object_name}")
+        upload = writeToFile.delay(chunk, object_name)  # use celery to do parallel processing
+    upload = upload.wait(timeout=None, interval=0.5)  # force wait
+
 
 if __name__ == "__main__":
-    # manager = mp.Manager()
-    # # Define a list (queue) for tasks and computation results
-    # tasks = manager.Queue()
-    # results = manager.Queue()
-
-    # num_processes = mp.cpu_count()
-    # pool = mp.Pool(processes=num_processes)
-    # processes = []
-    # # Initiate the worker processes
-    # for i in range(num_processes):
-
-    #     # Set process name
-    #     process_name = 'P%i' % i
-
-    #     # Create the process, and connect it to the worker function
-    #     new_process = mp.Process(target=getAnimeLinks, args=(process_name,tasks,results))
-
-    #     # Add new process to the list of processes
-    #     processes.append(new_process)
-
-    #     # Start the process
-    #     new_process.start()
 
     start_time = time.time()  # for timing
 
     processes, num_processes, tasks, results = init_mp(getAnimeLinks)
     all_links = getAllAnimeLinks()
+    concat_all_links = []
+    for i, links in enumerate(all_links):
+        concat_all_links += links  # merge all the lists into one list
+
+    concat_all_links = list(set(concat_all_links))
+
+    object_prefix = str(datetime.datetime.now().date())  # e.g. 2021-04-03
+    scrapeAndUpload(concat_all_links, object_prefix)
 
     logging.info("--- Job took %s seconds ---" % (time.time() - start_time))
-
