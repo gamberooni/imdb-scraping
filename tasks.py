@@ -8,9 +8,9 @@ import json
 import logging
 from conf import BUCKET_NAME, MINIO_URL, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, RABBITMQ_URI, REDIS_URI
 
-
 logging.basicConfig()
 logging.getLogger().setLevel(logging.INFO)
+
 
 app = Celery('tasks', 
             backend=REDIS_URI, 
@@ -66,16 +66,23 @@ def getAllGenres():
                 genres.append(genre.get("value"))
     return genres
 
-def getMovieDetails(url):
+def getMovieDetails(url, scrape_ts):
     logging.info(f"Getting details for {url}")
     data = {}
     r = requests.get(url=url)
     # Create a BeautifulSoup object
     soup = BeautifulSoup(r.text, 'html.parser')
 
+    # scrape timestamp
+    data["scrape_ts"] = scrape_ts
+
     # page title
-    title = soup.title
-    data["title"] = title.string
+    title = soup.title.string
+    data["title"] = title
+    # data["title"] = title.split(' - IMDb')[0]
+
+    # title url
+    data["url"] = url
 
     # rating
     try:
@@ -95,7 +102,8 @@ def getMovieDetails(url):
 
     # name
     titleName = soup.find("div",{'class':'titleBar'}).find("h1")
-    data["name"] = titleName.contents[0].replace(u'\xa0', u'')
+    data["name"] = titleName.contents[0].strip()
+    # data["name"] = titleName.contents[0].replace(u'\xa0', u'')
 
     # is_series
     # check if the string "Episodes" is present
@@ -144,7 +152,7 @@ def getMovieDetails(url):
     # summary
     try:
         summary_text = soup.find("div",{'class':'summary_text'})
-        data["summary_text"] = summary_text.text
+        data["summary_text"] = summary_text.text.strip()
     except:
         data["summary_text"] = None
         print(f"Summary text is None for url {url}")
@@ -186,7 +194,7 @@ def put_json(bucket_name, object_name, d):
     )
 
 @app.task
-def writeToFile(chunk, object_name):
+def writeToFile(chunk, object_name, scrape_ts):
     '''
     for each chunk (metadata of 5 titles in json format),
     dump them into one .json file and store that .json file
@@ -195,7 +203,7 @@ def writeToFile(chunk, object_name):
     title_list = []
     for link in chunk:  # loop thru all the 5 json data
         url = f"https://www.imdb.com{link}"
-        title = getMovieDetails(url)
+        title = getMovieDetails(url, scrape_ts)
         title_list.append(title)
 
     put_json(bucket_name, object_name, title_list)

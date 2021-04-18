@@ -94,30 +94,32 @@ dsmugen_url = "https://www.imdb.com/title/tt11032374/"
 # details_list.append(details1)
 # details_list.append(details2)
 
-# details = getMovieDetails(aot_url)
-# # # print(type(details))
-# print(json.dumps(details, sort_keys=True, indent=4))  # to pretty print
+# scrape timestamp
+now = datetime.datetime.now()
+scrape_ts = now.strftime("%Y-%m-%d %H:%M:%S")  # time when the scraping starts for all 
+details = getMovieDetails(aot_url, scrape_ts)
+# # print(type(details))
+print(json.dumps(details, sort_keys=True, indent=4))  # to pretty print
 
-
-def get_born_date(link):  
-    url = f"https://www.imdb.com{link}"
-    r = requests.get(url=url)
-    # Create a BeautifulSoup object
-    soup = BeautifulSoup(r.text, 'html.parser')
-    try:
-        born_date = soup.find("time").text.split(',')
-        born_year = int(born_date[-1].strip())
-        born_month = born_date[0].strip().split(' ')[0]
-        born_day = int(born_date[0].strip().split(' ')[-1])
-    except:
-        born_year = None
-        born_month = None
-        born_day = None
+# def get_born_date(link):  
+#     url = f"https://www.imdb.com{link}"
+#     r = requests.get(url=url)
+#     # Create a BeautifulSoup object
+#     soup = BeautifulSoup(r.text, 'html.parser')
+#     try:
+#         born_date = soup.find("time").text.split(',')
+#         born_year = int(born_date[-1].strip())
+#         born_month = born_date[0].strip().split(' ')[0]
+#         born_day = int(born_date[0].strip().split(' ')[-1])
+#     except:
+#         born_year = None
+#         born_month = None
+#         born_day = None
     
-    return born_year, born_month, born_day
+#     return born_year, born_month, born_day
 
-star_link = "/name/nm2569233/"
-born_year, born_month, born_day = get_born_date(star_link)
+# star_link = "/name/nm2569233/"
+# born_year, born_month, born_day = get_born_date(star_link)
 
 # crew = getCrewData(dsmugen_url)
 # print(json.dumps(dsmugen_crew, sort_keys=True, indent=4))  

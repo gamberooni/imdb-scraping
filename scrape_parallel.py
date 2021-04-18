@@ -7,6 +7,9 @@ import logging
 import datetime
 from tasks import writeToFile
 
+logging.basicConfig()
+logging.getLogger().setLevel(logging.INFO)
+
 
 def getTotalPages():
     url = f"https://www.imdb.com/search/keyword/?keywords=anime&page=1"
@@ -126,19 +129,20 @@ def scrapeAndUpload(all_links, object_prefix):
     # put 5 titles' metadata into one chunk
     chunks = [all_links[x:x+5] for x in range(0, len(all_links), 5)]
 
+    # scrape timestamp
+    now = datetime.datetime.now()
+    scrape_ts = now.strftime("%Y-%m-%d %H:%M:%S")  # time when the scraping starts for all 
+
     for count, chunk in enumerate(chunks):  # each chunk has 5 json data
         object_name = f"{object_prefix}/anime_{count}.json"
         logging.info(f"Writing to object '{object_name}")
 
-        upload = writeToFile.delay(chunk, object_name)  # use celery to do parallel processing
+        upload = writeToFile.delay(chunk, object_name, scrape_ts)  # use celery to do parallel processing
 
     upload = upload.wait(timeout=None, interval=0.5)  # force wait
 
 
 if __name__ == "__main__":
-    logging.basicConfig()
-    logging.getLogger().setLevel(logging.INFO)
-
     start_time = time.time()  # for timing
 
     # get all the links so that I know which url to scrape from

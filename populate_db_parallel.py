@@ -1,17 +1,19 @@
-from minio import Minio
-import json
-import io
-import re
-import psycopg2
 from conf import POSTGRES_HOSTNAME, POSTGRES_PORT, POSTGRES_DATABASE, POSTGRES_USER, POSTGRES_PASSWORD
 from conf import MINIO_URL, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, BUCKET_NAME
-from sql import *
-import logging
-import time
-import multiprocessing as mp
-import requests
 from bs4 import BeautifulSoup
-import datetime
+from minio import Minio
+from sql import *
+import io
+import json
+import logging
+import multiprocessing as mp
+import psycopg2
+import re
+import requests
+import time
+
+logging.basicConfig()
+logging.getLogger().setLevel(logging.INFO)
 
 
 def init_mp(target_func):
@@ -65,8 +67,8 @@ def kill_mp(num_processes, tasks, results):
 def get_born_date(link):  
     url = f"https://www.imdb.com{link}"
     r = requests.get(url=url)
-    # Create a BeautifulSoup object
-    soup = BeautifulSoup(r.text, 'html.parser')
+    soup = BeautifulSoup(r.text, 'html.parser')  # Create a BeautifulSoup object
+    
     try:
         born_date = soup.find("time").text.split(',')
         born_year = int(born_date[-1].strip())
@@ -102,7 +104,8 @@ def populate_db(process_name, tasks, results):
 
     bucket_name = BUCKET_NAME
 
-    logging.info('[%s] evaluation routine starts' % process_name)            
+    logging.info('[%s] evaluation routine starts' % process_name)    
+
     while True:
         object_name = tasks.get()
         if not isinstance(object_name, str):  # to indicate finished
@@ -115,50 +118,59 @@ def populate_db(process_name, tasks, results):
             data = json.load(io.BytesIO(o.data))
 
             for item in data:  # for each of the 5 anime titles
-
                 # titles table
-                now = datetime.datetime.now()
-                scrape_ts = now.strftime("%Y-%m-%d %H:%M:%S")
+                scrape_ts = item["scrape_ts"]
+
                 duration = item["duration"]  
                 if duration is not None:
-                    if re.search(r"h", duration) and re.search(r"min", duration):  # 1h 26min
+                    if re.search(r"h", duration) and re.search(r"min", duration):   # 1h 26min
                         duration_hour = int(duration.split('h')[0])
                         duration_minute = int(duration.split('h')[-1].replace('min', '').strip())        
-                    elif re.search(r"h", duration):  # 2h
+                    elif re.search(r"h", duration):                                 # 2h
                         duration_hour = int(duration.replace('h', '').strip())
                         duration_minute = 0
-                    else:  # 26min
+                    else:                                                           # 26min
                         duration_hour = 0
                         duration_minute = int(duration.replace('min', '').strip())
                     duration = duration_hour * 60 + duration_minute
+
                 is_series = item["isSeries"]
-                name = item["title"].strip()
+
+                name = item["title"]
+
+                url = item["url"]
+
                 try:
                     rating_count = int(''.join(item["ratingCount"].split(',')))
                 except:
                     rating_count = None
+
                 try:
                     rating_value = item["ratingValue"]
                 except:
                     rating_value = None
+
                 try:
                     release_date = item["release_date"]
                 except:
                     release_date = None
+
                 # movie_rated = item["movie_rated"]
+
                 try:
                     summary_text = item["summary_text"]
-                    summary_text = re.sub(r"\\n", "", summary_text)  # remove \n and \t 
-                    summary_text = summary_text.strip()  # remove leading and trailing white spaces
-                    summary_text = re.sub(r"\s{2,}", "", summary_text)  # remove white spaces that occur more than twice
-                    summary_text = summary_text.split("See full summary", 1)  # get everything before "See full summary"
-                    summary_text = summary_text[0]
+                    if re.search(r"See full summary", summary_text):
+                        summary_text = re.sub(r"\s{2,}", "", summary_text)  # remove white spaces that occur more than twice
+                        summary_text = summary_text.split("See full summary", 1)  # get everything before "See full summary"
+                        summary_text = summary_text[0]
+                    # summary_text = re.sub(r"\\n", "", summary_text)  # remove \n and \t 
+                    # summary_text = summary_text.strip()  # remove leading and trailing white spaces
                     if "Add a Plot" in summary_text:
                         summary_text = None
                 except:
                     summary_text = None
 
-                cursor.execute(insert_into_titles, (scrape_ts, duration, is_series, name, rating_count, rating_value, release_date, summary_text,))
+                cursor.execute(insert_into_titles, (scrape_ts, duration, is_series, name, url, rating_count, rating_value, release_date, summary_text,))
                 conn.commit()
 
                 # directors table
@@ -258,9 +270,6 @@ def start_populate(object_prefix, num_processes, tasks, results):
 
 
 if __name__ == "__main__":
-    logging.basicConfig()
-    logging.getLogger().setLevel(logging.INFO)
-
     start_time = time.time()  # for timing
 
     num_processes, tasks, results = init_mp(populate_db)
