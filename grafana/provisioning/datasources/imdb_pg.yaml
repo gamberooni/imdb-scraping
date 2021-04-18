@@ -1,0 +1,14 @@
+apiVersion: 1
+
+datasources:
+  - name: imdb_anime
+    type: postgres
+    url: imdb_postgres
+    database: imdb
+    user: admin
+    secureJsonData:
+      password: password
+    jsonData:
+      sslmode: "disable"
+      postgresVersion: 1260 # 903=9.3, 904=9.4, 905=9.5, 906=9.6, 1000=10
+      timescaledb: false      

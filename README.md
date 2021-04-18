@@ -7,7 +7,7 @@
 5. ~~create a postgres db~~
 6. ~~decide a schema~~ - need to refine
 7. do transformation on these json files and dump them into the postgres db - need to explore the data and decide what kind of transformations to perform
-8. create a simple dashboard to show top 5 sorted by some criteria
+8. create a simple dashboard (Grafana) to show top 5 sorted by some criteria
 9. include link to bring dashboard user to the imdb website of that anime
 10. ~~use docker-compose to bring up these different containers~~
 12. ~~use rabbitmq and celery, and multiprocessing module to parallelize jobs~~

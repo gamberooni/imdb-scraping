@@ -62,6 +62,24 @@ services:
     healthcheck:
       test: redis-cli ping
 
+  imdb_grafana:
+    image: grafana/grafana:7.5.4
+    container_name: imdb_grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=password
+      - GF_USERS_ALLOW_SIGN_UP=false
+    ports: 
+      - 3000:3000
+    volumes:
+      - grafana-volume:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    restart: always
+    depends_on:
+      - imdb_postgres
+    networks:
+      - imdb-scraping
+
 networks:
   imdb-scraping:
     external:
@@ -72,3 +90,4 @@ volumes:
     minio-volume:
     rabbitmq-volume-lib:
     rabbitmq-volume-log:
+    grafana-volume:

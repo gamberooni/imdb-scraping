@@ -1,6 +1,7 @@
 import os
+from conf import SCHEMA_NAME
 
-schemaName = os.getenv('SCHEMA_NAME', "imdb")
+schemaName = SCHEMA_NAME
 
 drop_schema = f"DROP SCHEMA IF EXISTS {schemaName} CASCADE;"
 create_schema = f"CREATE SCHEMA IF NOT EXISTS {schemaName};"
@@ -11,19 +12,28 @@ set_search_path = f"SET search_path TO {schemaName};"
 create_directors_table = f"""
     CREATE TABLE IF NOT EXISTS directors (
         id SERIAL PRIMARY KEY,
-        name VARCHAR(50) UNIQUE);
+        name VARCHAR(50) UNIQUE,
+        born_year SMALLINT,
+        born_month VARCHAR(20),
+        born_day SMALLINT);
     """         
 
 create_stars_table = f"""
     CREATE TABLE IF NOT EXISTS stars (
         id SERIAL PRIMARY KEY,
-        name VARCHAR(50) UNIQUE NOT NULL);
+        name VARCHAR(50) UNIQUE NOT NULL,
+        born_year SMALLINT,
+        born_month VARCHAR(20),
+        born_day SMALLINT);
     """                           
 
 create_writers_table = f"""
     CREATE TABLE IF NOT EXISTS writers (
         id SERIAL PRIMARY KEY,
-        name VARCHAR(50) UNIQUE NOT NULL);
+        name VARCHAR(50) UNIQUE NOT NULL,
+        born_year SMALLINT,
+        born_month VARCHAR(20),
+        born_day SMALLINT);
     """
 
 create_genres_table = f"""
@@ -35,6 +45,7 @@ create_genres_table = f"""
 create_titles_table = f"""
     CREATE TABLE IF NOT EXISTS titles (
         id SERIAL PRIMARY KEY,
+        scrape_ts TIMESTAMP,
         duration SMALLINT,
         is_series BOOLEAN,
         name VARCHAR(500) NOT NULL,
@@ -70,22 +81,22 @@ create_titles_genres_tables = f"""
 
 # INSERT INTO TABLEs
 insert_into_directors = f"""
-    INSERT INTO directors (name)
-    VALUES (%s)
+    INSERT INTO directors (name, born_year, born_month, born_day)
+    VALUES (%s, %s, %s, %s)
     ON CONFLICT (name)
     DO NOTHING;
     """
 
 insert_into_writers = f"""
-    INSERT INTO writers (name)
-    VALUES (%s)
+    INSERT INTO writers (name, born_year, born_month, born_day)
+    VALUES (%s, %s, %s, %s)
     ON CONFLICT (name)
     DO NOTHING;
     """    
 
 insert_into_stars = f"""
-    INSERT INTO stars (name)
-    VALUES (%s)
+    INSERT INTO stars (name, born_year, born_month, born_day)
+    VALUES (%s, %s, %s, %s)
     ON CONFLICT (name)
     DO NOTHING;
     """    
@@ -98,8 +109,8 @@ insert_into_genres = f"""
     """    
 
 insert_into_titles = f"""
-    INSERT INTO titles (duration, is_series, name, rating_count, rating_value, release_date, summary_text)
-    VALUES (%s, %s, %s, %s, %s, %s, %s);
+    INSERT INTO titles (scrape_ts, duration, is_series, name, rating_count, rating_value, release_date, summary_text)
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
     """ 
 
 insert_into_titles_directors = f"""
