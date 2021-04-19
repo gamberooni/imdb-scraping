@@ -1,0 +1,480 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "gnetId": null,
+  "graphTooltip": 0,
+  "id": 1,
+  "links": [],
+  "panels": [
+    {
+      "datasource": "imdb_anime",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": null,
+            "filterable": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "7.5.4",
+      "targets": [
+        {
+          "format": "table",
+          "group": [],
+          "metricColumn": "release_date",
+          "queryType": "randomWalk",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  name as \"Name\",\n  rating_count as \"Rating Count\",\n  rating_value as \"Average Rating\"\nFROM imdb.titles\nWHERE rating_count IS NOT NULL\nORDER BY rating_count DESC, rating_value DESC\nLIMIT 10",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": [
+                  "rating_count"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "imdb.titles",
+          "timeColumn": "id",
+          "timeColumnType": "int4",
+          "where": [
+            {
+              "name": "$__unixEpochFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Top 10 Best Anime All Time",
+      "type": "table"
+    },
+    {
+      "datasource": "imdb_anime",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "blue",
+            "mode": "continuous-BlPu"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "semi-dark-blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 16,
+        "x": 0,
+        "y": 11
+      },
+      "id": 6,
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showUnfilled": true,
+        "text": {}
+      },
+      "pluginVersion": "7.5.4",
+      "targets": [
+        {
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "none",
+          "queryType": "randomWalk",
+          "rawQuery": true,
+          "rawSql": "SELECT now() as \"time\", genre, COUNT(*) \nFROM imdb.titles_genres\nJOIN imdb.genres ON genre_id = id\nGROUP BY genre\nORDER BY count DESC\nLIMIT 10\n",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": [
+                  "value"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "timeColumn": "time",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Top 10 Genres",
+      "type": "bargauge"
+    },
+    {
+      "datasource": "imdb_anime",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 8,
+        "x": 16,
+        "y": 11
+      },
+      "id": 4,
+      "options": {
+        "displayLabels": [
+          "value"
+        ],
+        "legend": {
+          "displayMode": "list",
+          "placement": "right",
+          "values": []
+        },
+        "pieType": "pie",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {}
+      },
+      "pluginVersion": "7.5.4",
+      "targets": [
+        {
+          "format": "table",
+          "group": [],
+          "metricColumn": "name",
+          "queryType": "randomWalk",
+          "rawQuery": true,
+          "rawSql": "SELECT \r\n\t(SELECT COUNT(duration) FROM imdb.titles\r\n\tWHERE duration IS NOT NULL\r\n  \t\tAND duration < 30) as \"Less than 30 minutes\",\r\n\t(SELECT COUNT(duration) FROM imdb.titles\r\n\tWHERE duration IS NOT NULL\r\n  \t\tAND duration BETWEEN 31 AND 60) as \"Between 31 to 60 minutes\",\r\n\t(SELECT COUNT(duration) FROM imdb.titles\r\n\tWHERE duration IS NOT NULL\r\n  \t\tAND duration > 60) as \"Greater than 60 minutes\"\r\n",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": [
+                  "rating_count"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "imdb.titles",
+          "timeColumn": "scrape_ts",
+          "timeColumnType": "timestamp",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Anime Duration",
+      "type": "piechart"
+    },
+    {
+      "datasource": "imdb_anime",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 21
+      },
+      "id": 10,
+      "options": {
+        "series_index": 0,
+        "wordCloudOptions": {
+          "deterministic": true,
+          "enableTooltip": true,
+          "fontFamily": "arial",
+          "fontSizes": [
+            15,
+            80
+          ],
+          "padding": 1,
+          "rotationAngles": [
+            0,
+            0
+          ],
+          "rotations": 2,
+          "scale": "sqrt",
+          "spiral": "archimedean",
+          "transitionDuration": 800
+        }
+      },
+      "pluginVersion": "7.5.4",
+      "targets": [
+        {
+          "format": "table",
+          "group": [],
+          "metricColumn": "none",
+          "queryType": "randomWalk",
+          "rawQuery": true,
+          "rawSql": "SELECT name, COUNT(*) FROM imdb.titles_directors\r\nJOIN imdb.directors ON director_id = id\r\nGROUP BY name",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": [
+                  "value"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "timeColumn": "time",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        }
+      ],
+      "title": "Directed Most Titles (Directors)",
+      "type": "magnesium-wordcloud-panel"
+    },
+    {
+      "datasource": "imdb_anime",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 21
+      },
+      "id": 12,
+      "options": {
+        "series_index": 0,
+        "wordCloudOptions": {
+          "deterministic": true,
+          "enableTooltip": true,
+          "fontFamily": "arial",
+          "fontSizes": [
+            15,
+            80
+          ],
+          "padding": 1,
+          "rotationAngles": [
+            0,
+            0
+          ],
+          "rotations": 2,
+          "scale": "sqrt",
+          "spiral": "archimedean",
+          "transitionDuration": 800
+        }
+      },
+      "pluginVersion": "7.5.4",
+      "targets": [
+        {
+          "format": "table",
+          "group": [],
+          "metricColumn": "none",
+          "queryType": "randomWalk",
+          "rawQuery": true,
+          "rawSql": "SELECT name, COUNT(*) FROM imdb.titles_writers\r\nJOIN imdb.writers ON writer_id = id\r\nGROUP BY name",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": [
+                  "value"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "timeColumn": "time",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        }
+      ],
+      "title": "Most Titles Written (Writers)",
+      "type": "magnesium-wordcloud-panel"
+    },
+    {
+      "datasource": "imdb_anime",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 21
+      },
+      "id": 8,
+      "options": {
+        "series_index": 0,
+        "wordCloudOptions": {
+          "deterministic": true,
+          "enableTooltip": true,
+          "fontFamily": "arial",
+          "fontSizes": [
+            15,
+            80
+          ],
+          "padding": 1,
+          "rotationAngles": [
+            0,
+            0
+          ],
+          "rotations": 2,
+          "scale": "sqrt",
+          "spiral": "archimedean",
+          "transitionDuration": 800
+        }
+      },
+      "pluginVersion": "7.5.4",
+      "targets": [
+        {
+          "format": "table",
+          "group": [],
+          "metricColumn": "none",
+          "queryType": "randomWalk",
+          "rawQuery": true,
+          "rawSql": "SELECT name, COUNT(*) FROM imdb.titles_stars\r\nJOIN imdb.stars ON star_id = id\r\nGROUP BY name",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": [
+                  "value"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "timeColumn": "time",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Most Appearances (Stars)",
+      "type": "magnesium-wordcloud-panel"
+    }
+  ],
+  "refresh": false,
+  "schemaVersion": 27,
+  "style": "dark",
+  "tags": [],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "",
+  "title": "Anime",
+  "uid": "Z8i9pfuMk",
+  "version": 13
+}

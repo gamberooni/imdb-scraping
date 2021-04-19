@@ -69,6 +69,7 @@ services:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=password
       - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=magnesium-wordcloud-panel,marcusolsson-calendar-panel
     ports: 
       - 3000:3000
     volumes:
