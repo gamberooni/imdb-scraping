@@ -11,6 +11,7 @@ import psycopg2
 import re
 import requests
 import time
+import datetime
 
 logging.basicConfig()
 logging.getLogger().setLevel(logging.INFO)
@@ -273,8 +274,8 @@ if __name__ == "__main__":
     start_time = time.time()  # for timing
 
     num_processes, tasks, results = init_mp(populate_db)
-    OBJECT_PREFIX = "2021-04-18/"
-    # OBJECT_PREFIX = str(datetime.datetime.now().date())
+    # OBJECT_PREFIX = "2021-04-19/"
+    OBJECT_PREFIX = str(datetime.datetime.now().date()) + "/"
     start_populate(OBJECT_PREFIX, num_processes, tasks, results)
 
     logging.info("--- Job took %s seconds ---" % (time.time() - start_time))
