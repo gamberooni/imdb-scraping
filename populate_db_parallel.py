@@ -156,6 +156,11 @@ def populate_db(process_name, tasks, results):
                 except:
                     release_date = None
 
+                try:
+                    release_year = int(re.findall(r'\d{4}', release_date)[0])
+                except:
+                    release_year = None
+                
                 # movie_rated = item["movie_rated"]
 
                 try:
@@ -171,7 +176,7 @@ def populate_db(process_name, tasks, results):
                 except:
                     summary_text = None
 
-                cursor.execute(insert_into_titles, (scrape_ts, duration, is_series, name, url, rating_count, rating_value, release_date, summary_text,))
+                cursor.execute(insert_into_titles, (scrape_ts, duration, is_series, name, url, rating_count, rating_value, release_date, release_year, summary_text,))
                 conn.commit()
 
                 # directors table
@@ -274,8 +279,8 @@ if __name__ == "__main__":
     start_time = time.time()  # for timing
 
     num_processes, tasks, results = init_mp(populate_db)
-    # OBJECT_PREFIX = "2021-04-19/"
-    OBJECT_PREFIX = str(datetime.datetime.now().date()) + "/"
+    OBJECT_PREFIX = "2021-04-19/"
+    # OBJECT_PREFIX = str(datetime.datetime.now().date()) + "/"
     start_populate(OBJECT_PREFIX, num_processes, tasks, results)
 
     logging.info("--- Job took %s seconds ---" % (time.time() - start_time))

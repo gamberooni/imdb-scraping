@@ -53,6 +53,7 @@ create_titles_table = f"""
         rating_count INT,
         rating_value FLOAT(2),
         release_date VARCHAR(50),
+        release_year SMALLINT,
         summary_text VARCHAR);
     """
 
@@ -65,7 +66,7 @@ create_titles_directors_tables = f"""
 create_titles_stars_tables = f"""
     CREATE TABLE IF NOT EXISTS titles_stars (
         title_id INT REFERENCES titles (id),
-        star_id INT);
+        star_id INT REFERENCES stars (id));
     """               
 
 create_titles_writers_tables = f"""
@@ -110,8 +111,8 @@ insert_into_genres = f"""
     """    
 
 insert_into_titles = f"""
-    INSERT INTO titles (scrape_ts, duration, is_series, name, url, rating_count, rating_value, release_date, summary_text)
-    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);
+    INSERT INTO titles (scrape_ts, duration, is_series, name, url, rating_count, rating_value, release_date, release_year, summary_text)
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
     """ 
 
 insert_into_titles_directors = f"""
