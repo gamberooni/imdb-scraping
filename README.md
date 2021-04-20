@@ -36,7 +36,9 @@ $ docker-compose up -d
 ## Execution sequence (after starting Docker containers)
 1. Start celery workers
 > celery -A tasks:app workers -l info -P gevent -c 24
+
     - Note that this command sets the value of concurrency to be 24
+
 2. create_bucket.py
 3. scrape_parallel.py
 4. create_schema.py
