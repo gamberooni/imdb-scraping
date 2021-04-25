@@ -8,7 +8,7 @@ This repo performs web scraping on the IMDb website using `BeautifulSoup4`, part
     - It would be a better idea to directly download the dataset provided by the IMDb team [here](https://datasets.imdbws.com/) and the documentation for this dataset is found [here](https://www.imdb.com/interfaces/)
 2. These scripts work for the current IMDb Title page layout at this time of writing (18 April 2021). The IMDb team is working on updates to the Title page and it is highly likely that these scripts may not work after the update...
 
-## Dashboard
+## Grafana Dashboard
 An example dashboard that I decided to come up with. 
 
 ![dashboard](./images/dashboard.png)
