@@ -35,7 +35,7 @@ This section describes what components each script interacts with in the workflo
 ## Database Schema
 I decided to adopt a snowflake schema instead of star schema because of the many-to-many relationships between the tables (e.g. one title can have many writers, stars and genres) and I think I still couldn't get over the fact of the highly denormalized fact table if star schema is adopted instead. I researched a little bit and I found that composite tables are also being used in data warehouse, so I think this snowflake schema with only one composite table to each dimension table is a tradeoff I am willing to make. Feedbacks are welcome though :)
 
-![db-schema](./images/db_schema.png)
+![db-schema](./images/db-schema.png)
 
 ## Starting Docker containers
 1. Create docker network
