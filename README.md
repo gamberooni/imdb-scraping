@@ -48,15 +48,21 @@ $ docker-compose up -d
 ```
 
 ## Execution sequence (after starting Docker containers)
-1. Start celery workers
+1. Create Python virtual environment and activate it
+> python3 -m venv venv
+> 
+> . venv/bin/activate
+2. Install dependencies
+> pip install -r requirements.txt
+3. Start celery workers (if gevent workers doesn't work, you can try using eventlet workers)
 > celery -A tasks:app workers -l info -P gevent -c 24
 
     - Note that this command sets the value of concurrency to be 24
 
-2. create_bucket.py
-3. scrape_parallel.py
-4. create_schema.py
-5. populate_db_parallel.py
+4. create_bucket.py
+5. scrape_parallel.py
+6. create_schema.py
+7. populate_db_parallel.py
 
 ## Grafana Dashboard
 Visit `Grafana` dashboard at `localhost:3000` and login using:
