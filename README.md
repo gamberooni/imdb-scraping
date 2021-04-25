@@ -18,7 +18,7 @@ I thought that the `Top 10 Best Anime All Time` table was too ugly so I decided 
 
 I learned Javascript then React for about a week, and the following frontend interface is the end result of my effort :). I also had to use `Node` and `Express` to correctly reflect the top 10 anime titles stored in Postgres. The entire backend is just a single `GET` request/response so no big deal about it. 
 
-I still think the frontend interfact looks ugly, but looks good enough after spending only one week on learning the whole JS stack required to develop this. I attempted to turn it into a Grafana Panel plugin, but it requires me to understand `TypeScript` as well, which I think it requires deeper understanding of the whole JavaScript and TypeScript paradigm. So I will just leave it as it is for now...
+I still think the frontend interface looks ugly, but looks good enough after spending only one week on learning the whole JS stack required to develop this. I attempted to turn it into a Grafana Panel plugin, but it requires me to understand `TypeScript` as well, which I think it requires deeper understanding of the whole JavaScript and TypeScript paradigm. So I will just leave it as it is for now...
 
 ![anime-react](./images/anime-react.png)
 
