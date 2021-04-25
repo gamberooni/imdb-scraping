@@ -84,13 +84,19 @@ def getMovieDetails(url, scrape_ts):
     # title url
     data["url"] = url
 
+    try:
+        data["poster_url"] = soup.find("div", {"class": "poster"}).find('img')['src']
+    except:
+        data["poster_url"] = None
+        logging.debug(f"Poster URL for {url} is None")
+
     # rating
     try:
         ratingValue = soup.find("span", {"itemprop" : "ratingValue"})
         data["ratingValue"] = ratingValue.string
     except:
         data["ratingValue"] = None
-        print(f"Rating value is None for url {url}")
+        logging.debug(f"Rating value is None for url {url}")
 
     # no of rating given
     try: 
@@ -98,7 +104,7 @@ def getMovieDetails(url, scrape_ts):
         data["ratingCount"] = ratingCount.string
     except:
         data["ratingCount"] = None
-        print(f"Rating count is None for url {url}")        
+        logging.debug(f"Rating count is None for url {url}")        
 
     # name
     titleName = soup.find("div",{'class':'titleBar'}).find("h1")
@@ -118,7 +124,7 @@ def getMovieDetails(url, scrape_ts):
         data["duration"] = soup.find("time").string.strip()
     except:
         data["duration"] = None 
-        print(f"Duration is None for url {url}")
+        logging.debug(f"Duration is None for url {url}")
 
     # genre
     try:
@@ -128,7 +134,7 @@ def getMovieDetails(url, scrape_ts):
             data["genres"].append(re.search(r">.*<\/a>", str(g)).group()[1:-4])
     except:
         data["genres"] = None
-        print(f"Genres is None for url {url}")
+        logging.debug(f"Genres is None for url {url}")
 
     # release date
     try:
@@ -136,7 +142,7 @@ def getMovieDetails(url, scrape_ts):
         data["release_date"] = release_date.string.strip()
     except:
         data["release_date"] = None
-        print(f"Release date is None for url {url}")
+        logging.debug(f"Release date is None for url {url}")
 
     # movie rated
     # subtext = soup.find("div", {"class": "subtext"})
@@ -155,7 +161,7 @@ def getMovieDetails(url, scrape_ts):
         data["summary_text"] = summary_text.text.strip()
     except:
         data["summary_text"] = None
-        print(f"Summary text is None for url {url}")
+        logging.debug(f"Summary text is None for url {url}")
 
     try:
         credit_summary_item = soup.find_all("div",{'class':'credit_summary_item'})
@@ -171,7 +177,7 @@ def getMovieDetails(url, scrape_ts):
                 })
     except:
         data["credits"] = None
-        print(f"Credits is None for url {url}")
+        logging.debug(f"Credits is None for url {url}")
 
     return data
 

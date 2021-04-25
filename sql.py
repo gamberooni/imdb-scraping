@@ -50,6 +50,7 @@ create_titles_table = f"""
         is_series BOOLEAN,
         name VARCHAR(500) NOT NULL,
         url VARCHAR(100) NOT NULL,
+        poster_url VARCHAR(800),
         rating_count INT,
         rating_value FLOAT(2),
         release_date VARCHAR(50),
@@ -111,8 +112,8 @@ insert_into_genres = f"""
     """    
 
 insert_into_titles = f"""
-    INSERT INTO titles (scrape_ts, duration, is_series, name, url, rating_count, rating_value, release_date, release_year, summary_text)
-    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
+    INSERT INTO titles (scrape_ts, duration, is_series, name, url, poster_url, rating_count, rating_value, release_date, release_year, summary_text)
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
     """ 
 
 insert_into_titles_directors = f"""
