@@ -6,8 +6,9 @@ import multiprocessing as mp
 import logging
 import datetime
 from tasks import writeToFile
-from prefect import task, Flow
+from prefect import task, Flow, Parameter
 import prefect
+import dask
 
 logging.basicConfig()
 logging.getLogger().setLevel(logging.INFO)
@@ -29,108 +30,41 @@ def getTotalPages():
 
     return math.ceil(totalCount / titlesInOnePage)
 
-def getAnimeLinks(process_name, tasks, results):
+def getAnimeLinks(page):
     '''
     get all the links of all titles that has the keyword "anime"
     of a particular page
     '''
-    logging.info('[%s] evaluation routine starts' % process_name)
-
     links = []
-    while True:  # break loop if the argument from the queue is -1
-        page = tasks.get()
-        if page < 0:  # to indicate finished
-            logging.info('[%s] evaluation routine quits' % process_name)
-            results.put(-1)
-            break
-        else:
-            logging.info(f"Scraping page {page}...")
-            url = f"https://www.imdb.com/search/keyword/?keywords=anime&page={page}"
-            r = requests.get(url=url, stream=True)
-            soup = BeautifulSoup(r.text, 'html.parser')
-            res = soup.find_all("div",{"class":"lister-item mode-detail"})
-            if res: 
-                for r in res:
-                    links.append(r.find("a")['href'])
+    print(f"Scraping page {page}...")
+    url = f"https://www.imdb.com/search/keyword/?keywords=anime&page={page}"
+    r = requests.get(url=url, stream=True)
+    soup = BeautifulSoup(r.text, 'html.parser')
+    res = soup.find_all("div",{"class":"lister-item mode-detail"})
+    if res:
+        for r in res:
+            links.append(r.find("a")['href'])
 
-            # Add result to the queue
-            results.put(links)                    
-
-    return
+    return links
 
 @task
-def getAllAnimeLinks(num_processes, tasks, results, start_page=1, end_page=None):
+def getAllAnimeLinks(start_page=1, end_page=None):
 
     logger = prefect.context.get("logger")
-
-    all_links = []
 
     if end_page == None:  # if end_page is not specified then scrape all pages
         end_page = getTotalPages()
 
-    logging.info(f"Getting anime links from page {start_page} to page {end_page}.")
-    
-    for p in range(start_page, end_page+1):
-        tasks.put(p)
+    logging.info(f"Getting anime links from page {start_page} to page {end_page}")
 
-    all_links = kill_mp(num_processes, tasks, results)  # kill the processes and get the results
+    links = dask.compute(
+        [dask.delayed(getAnimeLinks)(p) for p in range(start_page, end_page+1)],
+        scheduler="processes",
+    )  # returns as tuple
 
     logger.info("Finished getting all anime links!")
 
-    return all_links    
-
-
-def kill_mp(num_processes, tasks, results):
-    # Quit the worker processes by sending them -1
-    for i in range(num_processes):
-        tasks.put(-1)
-
-    num_finished_processes = 0
-    to_return = []
-    while True:  # infinite loop until all processes are killed
-        r = results.get()
-        # Have a look at the results
-        if r == -1:  # if the value of the argument in the queue is -1
-            num_finished_processes += 1
-
-            if num_finished_processes == num_processes:
-                break
-        else:
-            # Output result
-            to_return.append(r)
-    
-    return to_return
-
-@task(nout=3)
-def init_mp(target_func):
-    logger = prefect.context.get("logger")
-
-    manager = mp.Manager()
-    # Define a list (queue) for tasks and computation results
-    tasks = manager.Queue()
-    results = manager.Queue()
-    num_processes = mp.cpu_count() * 2 # number of processes = double of the number of cpus available
-
-    processes = []
-    # Initiate the worker processes
-    for i in range(num_processes):
-
-        # Set process name
-        process_name = 'P%i' % i
-
-        # Create the process, and connect it to the worker function
-        new_process = mp.Process(target=target_func, args=(process_name,tasks,results))
-
-        # Add new process to the list of processes
-        processes.append(new_process)
-
-    # Start the process
-    for process in processes:
-        process.start()   
-
-    logger.info(f"Initialized multiprocessing for function '{target_func}' with {num_processes} processes")
-
-    return num_processes, tasks, results    
+    return links[0]    
 
 @task
 def scrapeAndUpload(all_links, object_prefix):
@@ -148,6 +82,9 @@ def scrapeAndUpload(all_links, object_prefix):
     for count, chunk in enumerate(chunks):  # each chunk has 5 json data
         object_name = f"{object_prefix}/anime_{count}.json"
         logger.info(f"Writing to object '{object_name}")
+
+        # find out how to do this 
+        # dask.compute(dask.delayed(writeToFile)(chunk, object_name, scrape_ts), scheduler="processes")
 
         upload = writeToFile.delay(chunk, object_name, scrape_ts)  # use celery to do parallel processing
 
@@ -172,16 +109,16 @@ def main():
 
     with Flow("scrape") as flow:
         # get all the links so that I know which url to scrape from
-        num_processes, tasks, results = init_mp(getAnimeLinks)
-        all_links = getAllAnimeLinks(num_processes, tasks, results)
+        # num_processes, tasks, results = init_mp(getAnimeLinks)
+        all_links = getAllAnimeLinks()
         merged_all_links = concat_all_links(all_links)
 
         # go to each url to do scraping, then upload to MinIO
-        object_prefix = str(datetime.datetime.now().date())  # e.g. 2021-04-03
+        object_prefix = Parameter('object_prefix', default=str(datetime.datetime.now().date()))  # e.g. 2021-04-03/
         scrapeAndUpload(merged_all_links, object_prefix)
 
     flow.register("imdb-scraping")
-    # flow.run()
+    flow.run()
 
 
 if __name__ == "__main__":

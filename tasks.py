@@ -7,6 +7,7 @@ import io
 import json
 import logging
 from conf import BUCKET_NAME, MINIO_URL, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, RABBITMQ_URI, REDIS_URI
+import dask
 
 logging.basicConfig()
 logging.getLogger().setLevel(logging.INFO)
@@ -67,6 +68,7 @@ def getAllGenres():
                 genres.append(genre.get("value"))
     return genres
 
+@dask.delayed
 def getMovieDetails(url, scrape_ts):
     logging.info(f"Getting details for {url}")
     data = {}
@@ -182,6 +184,7 @@ def getMovieDetails(url, scrape_ts):
 
     return data
 
+@dask.delayed
 def put_json(bucket_name, object_name, d):
     """
     jsonify a dict and write it as object to the bucket
@@ -200,7 +203,7 @@ def put_json(bucket_name, object_name, d):
         content_type="application/json"
     )
 
-@app.task
+# @app.task
 def writeToFile(chunk, object_name, scrape_ts):
     '''
     for each chunk (metadata of 5 titles in json format),
@@ -214,5 +217,3 @@ def writeToFile(chunk, object_name, scrape_ts):
         title_list.append(title)
 
     put_json(bucket_name, object_name, title_list)
-
-    return 1    

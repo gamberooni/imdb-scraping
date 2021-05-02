@@ -1,7 +1,8 @@
-from prefect import Flow
+from prefect import Flow, Parameter
 from prefect.schedules import CronSchedule
 from prefect.tasks.prefect import StartFlowRun
 import pendulum
+import datetime
 
 
 # weekly_monday = CronSchedule(
@@ -12,10 +13,12 @@ weekly_monday = CronSchedule(
     "* * * * *", start_date=pendulum.now()
 )
 
+scrape_date = Parameter('scrape_date', default=str(datetime.datetime.now().date()) + "/")
+
 flow_a = StartFlowRun(flow_name="create_bucket", project_name="imdb-scraping", wait=True)
 flow_b = StartFlowRun(flow_name="create_schema", project_name="imdb-scraping", wait=True)
-flow_c = StartFlowRun(flow_name="scrape", project_name="imdb-scraping", wait=True)
-flow_d = StartFlowRun(flow_name="populate_db", project_name="imdb-scraping", wait=True)
+flow_c = StartFlowRun(flow_name="scrape", project_name="imdb-scraping", wait=True, parameters=dict(object_prefix=scrape_date))
+flow_d = StartFlowRun(flow_name="populate_db", project_name="imdb-scraping", wait=True, parameters=dict(object_prefix=scrape_date))
 
 with Flow("parent-flow", schedule=weekly_monday) as flow:
     flow_c.set_upstream(flow_a)
