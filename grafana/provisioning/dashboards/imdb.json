@@ -15,7 +15,6 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "id": 1,
   "links": [],
   "panels": [
     {
@@ -179,7 +178,7 @@
           "metricColumn": "none",
           "queryType": "randomWalk",
           "rawQuery": true,
-          "rawSql": "SELECT \r\n\t(SELECT COUNT(TO_CHAR(NOW(),'YYYY')::int - release_year::int)\r\n\t\tFROM imdb.titles\r\n\t\tWHERE TO_CHAR(NOW(),'YYYY')::int - release_year::int < 5) as \"less than 5 years\",\r\n\t(SELECT COUNT(TO_CHAR(NOW(),'YYYY')::int - release_year::int)\r\n\t\tFROM imdb.titles\r\n\t\tWHERE TO_CHAR(NOW(),'YYYY')::int - release_year::int BETWEEN 6 and 10) \"between 6 and 10 years\",\r\n\t(SELECT COUNT(TO_CHAR(NOW(),'YYYY')::int - release_year::int)\r\n\t\tFROM imdb.titles\r\n\t\tWHERE TO_CHAR(NOW(),'YYYY')::int - release_year::int > 10) as \"more than 10 years\"",
+          "rawSql": "SELECT \r\n\t(SELECT COUNT(TO_CHAR(NOW(),'YYYY')::int - release_year::int)\r\n\t\tFROM imdb.titles\r\n\t\tWHERE TO_CHAR(NOW(),'YYYY')::int - release_year::int < 5) as \"Less than 5 years\",\r\n\t(SELECT COUNT(TO_CHAR(NOW(),'YYYY')::int - release_year::int)\r\n\t\tFROM imdb.titles\r\n\t\tWHERE TO_CHAR(NOW(),'YYYY')::int - release_year::int BETWEEN 5 and 10) \"Between 5 and 10 years\",\r\n\t(SELECT COUNT(TO_CHAR(NOW(),'YYYY')::int - release_year::int)\r\n\t\tFROM imdb.titles\r\n\t\tWHERE TO_CHAR(NOW(),'YYYY')::int - release_year::int > 10) as \"More than 10 years\"",
           "refId": "A",
           "select": [
             [
@@ -338,7 +337,7 @@
           "metricColumn": "name",
           "queryType": "randomWalk",
           "rawQuery": true,
-          "rawSql": "SELECT \r\n\t(SELECT COUNT(duration) FROM imdb.titles\r\n\tWHERE duration IS NOT NULL\r\n  \t\tAND duration < 30) as \"Less than 30 minutes\",\r\n\t(SELECT COUNT(duration) FROM imdb.titles\r\n\tWHERE duration IS NOT NULL\r\n  \t\tAND duration BETWEEN 31 AND 60) as \"Between 31 to 60 minutes\",\r\n\t(SELECT COUNT(duration) FROM imdb.titles\r\n\tWHERE duration IS NOT NULL\r\n  \t\tAND duration > 60) as \"Greater than 60 minutes\"\r\n",
+          "rawSql": "SELECT \r\n\t(SELECT COUNT(duration) FROM imdb.titles\r\n\tWHERE duration IS NOT NULL\r\n  \t\tAND duration < 30) as \"Less than 30 minutes\",\r\n\t(SELECT COUNT(duration) FROM imdb.titles\r\n\tWHERE duration IS NOT NULL\r\n  \t\tAND duration BETWEEN 30 AND 60) as \"Between 30 to 60 minutes\",\r\n\t(SELECT COUNT(duration) FROM imdb.titles\r\n\tWHERE duration IS NOT NULL\r\n  \t\tAND duration > 60) as \"Greater than 60 minutes\"\r\n",
           "refId": "A",
           "select": [
             [
@@ -431,7 +430,7 @@
           ]
         }
       ],
-      "title": "Directed Most Titles (Directors)",
+      "title": "Most Titles Directed (Directors)",
       "type": "magnesium-wordcloud-panel"
     },
     {
@@ -586,5 +585,5 @@
   "timezone": "",
   "title": "Anime",
   "uid": "Z8i9pfuMk",
-  "version": 18
+  "version": 2
 }
