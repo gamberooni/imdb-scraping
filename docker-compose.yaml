@@ -71,7 +71,7 @@ services:
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_INSTALL_PLUGINS=magnesium-wordcloud-panel,marcusolsson-calendar-panel
     ports: 
-      - 3000:3000
+      - 3001:3000
     volumes:
       - grafana-volume:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning

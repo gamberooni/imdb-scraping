@@ -13,15 +13,16 @@ logging.getLogger().setLevel(logging.INFO)
 
 
 app = Celery('tasks', 
-            backend=REDIS_URI, 
-            broker=RABBITMQ_URI)
+    backend=REDIS_URI, 
+    broker=RABBITMQ_URI
+    )
 
 client = Minio(
     MINIO_URL,
     access_key=MINIO_ACCESS_KEY,
     secret_key=MINIO_SECRET_KEY,
     secure=False,
-)
+    )
 
 bucket_name = BUCKET_NAME
 assert client.bucket_exists(bucket_name), f"Bucket '{bucket_name}' does not exist."

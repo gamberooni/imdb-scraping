@@ -55,7 +55,7 @@ $ docker-compose up -d
 2. Install dependencies
 > pip install -r requirements.txt
 3. Start celery workers (if gevent workers doesn't work, you can try using eventlet workers)
-> celery -A tasks:app workers -l info -P gevent -c 24
+> celery -A tasks worker -l info -P gevent -c 24
 
     - Note that this command sets the value of concurrency to be 24
 
@@ -70,3 +70,14 @@ Visit `Grafana` dashboard at `localhost:3000` and login using:
 username: admin
 password: password
 ```
+
+## Using Prefect
+1. Activate Python venv
+2. Use Prefect backend server
+> prefect backend server
+3. Start backend server
+> prefect server start
+4. Start a local agent
+> prefect agent local start
+
+**__NOTE:__** Maybe need to refactor multiprocessing module with dask. Refer to this [issue](https://github.com/PrefectHQ/prefect/issues/2634)

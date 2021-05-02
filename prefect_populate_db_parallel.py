@@ -2,22 +2,27 @@ from conf import POSTGRES_HOSTNAME, POSTGRES_PORT, POSTGRES_DATABASE, POSTGRES_U
 from conf import MINIO_URL, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, BUCKET_NAME
 from bs4 import BeautifulSoup
 from minio import Minio
+from prefect import task, Flow
 from sql import *
+import datetime
 import io
 import json
 import logging
 import multiprocessing as mp
+import prefect
 import psycopg2
 import re
 import requests
-import time
-import datetime
 
 logging.basicConfig()
 logging.getLogger().setLevel(logging.INFO)
 
 
+@task(nout=3)
 def init_mp(target_func):
+
+    logger = prefect.context.get("logger")
+
     manager = mp.Manager()
     # Define a list (queue) for tasks and computation results
     tasks = manager.Queue()
@@ -40,6 +45,8 @@ def init_mp(target_func):
     # Start the process
     for process in processes:
         process.start()         
+
+    logger.info(f"Initialized multiprocessing for function '{target_func}' with {num_processes} processes")
 
     return num_processes, tasks, results    
 
@@ -92,9 +99,6 @@ def populate_db(process_name, tasks, results):
         password=POSTGRES_PASSWORD
         )
     cursor = conn.cursor()
-
-    cursor.execute(set_search_path_sql)  # set search path to the schema
-    conn.commit()
 
     client = Minio(
         MINIO_URL,
@@ -178,7 +182,18 @@ def populate_db(process_name, tasks, results):
                 except:
                     summary_text = None
 
-                cursor.execute(insert_into_titles, (scrape_ts, duration, is_series, name, url, poster_url, rating_count, rating_value, release_date, release_year, summary_text,))
+                cursor.execute(insert_into_titles, 
+                    (scrape_ts, 
+                    duration, 
+                    is_series, 
+                    name, 
+                    url, 
+                    poster_url, 
+                    rating_count, 
+                    rating_value, 
+                    release_date, 
+                    release_year, 
+                    summary_text,))
                 conn.commit()
 
                 # directors table
@@ -251,7 +266,11 @@ def populate_db(process_name, tasks, results):
 
     return
 
+@task
 def start_populate(object_prefix, num_processes, tasks, results):
+
+    logger = prefect.context.get("logger")
+
     client = Minio(
         MINIO_URL,
         access_key=MINIO_ACCESS_KEY,
@@ -259,30 +278,42 @@ def start_populate(object_prefix, num_processes, tasks, results):
         secure=False,
     )
 
-    bucket_name = BUCKET_NAME
-
-    if client.bucket_exists(bucket_name):  # if bucket exists
-        logging.info(f"Bucket '{bucket_name}' exists. Proceeding job.")
+    if client.bucket_exists(BUCKET_NAME):  # if bucket exists
+        logger.info(f"Bucket '{BUCKET_NAME}' exists. Proceeding job.")
     else:
-        raise Exception(f"Bucket '{bucket_name}' does not exist. Aborting...")
+        raise Exception(f"Bucket '{BUCKET_NAME}' does not exist. Aborting...")
 
-    objects = client.list_objects(bucket_name=bucket_name, prefix=object_prefix)
-    object_names = []
-    for o in objects:
-        object_names.append(o.object_name)
+    logger.info("Listing objects from bucket")
+    objects = client.list_objects(bucket_name=BUCKET_NAME, prefix=object_prefix)
 
-    for obj in object_names:  
-        tasks.put(obj)
+    # object_names = []
+    # for o in objects:
+    #     object_names.append(o.object_name)
 
+    # for obj in object_names:  
+    #     tasks.put(obj)
+
+    for obj in objects:  
+        tasks.put(obj.object_name)
+
+    logger.info("Waiting for populate database job to complete...")
     _ = kill_mp(num_processes, tasks, results)
+    logger.info("Finished populating database!")
+
+
+def main():
+
+    with Flow("populate_db") as flow:
+
+        num_processes, tasks, results = init_mp(populate_db)
+
+        # OBJECT_PREFIX = "2021-04-19/"
+        OBJECT_PREFIX = str(datetime.datetime.now().date()) + "/"
+        start_populate(OBJECT_PREFIX, num_processes, tasks, results)
+
+    flow.register("imdb-scraping")
+    # flow.run()
 
 
 if __name__ == "__main__":
-    start_time = time.time()  # for timing
-
-    num_processes, tasks, results = init_mp(populate_db)
-    # OBJECT_PREFIX = "2021-04-19/"
-    OBJECT_PREFIX = str(datetime.datetime.now().date()) + "/"
-    start_populate(OBJECT_PREFIX, num_processes, tasks, results)
-
-    logging.info("--- Job took %s seconds ---" % (time.time() - start_time))
+    main()
