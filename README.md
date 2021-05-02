@@ -79,5 +79,7 @@ password: password
 > prefect server start
 4. Start a local agent
 > prefect agent local start
+5. Create prefect project
+> prefect create project "imdb-scraping"
 
 **__NOTE:__** Maybe need to refactor multiprocessing module with dask. Refer to this [issue](https://github.com/PrefectHQ/prefect/issues/2634)

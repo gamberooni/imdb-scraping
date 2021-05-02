@@ -10,17 +10,19 @@ import datetime
 # )
 
 weekly_monday = CronSchedule(
-    "* * * * *", start_date=pendulum.now()
+    "40 00 * * *", start_date=pendulum.now()
 )
 
 scrape_date = Parameter('scrape_date', default=str(datetime.datetime.now().date()) + "/")
 
 flow_a = StartFlowRun(flow_name="create_bucket", project_name="imdb-scraping", wait=True)
 flow_b = StartFlowRun(flow_name="create_schema", project_name="imdb-scraping", wait=True)
-flow_c = StartFlowRun(flow_name="scrape", project_name="imdb-scraping", wait=True, parameters=dict(object_prefix=scrape_date))
-flow_d = StartFlowRun(flow_name="populate_db", project_name="imdb-scraping", wait=True, parameters=dict(object_prefix=scrape_date))
+flow_c = StartFlowRun(flow_name="scrape", project_name="imdb-scraping", wait=True)
+flow_d = StartFlowRun(flow_name="populate_db", project_name="imdb-scraping", wait=True)
 
 with Flow("parent-flow", schedule=weekly_monday) as flow:
+    flow_c(parameters=dict(object_prefix=scrape_date))
+    flow_d(parameters=dict(object_prefix=scrape_date))
     flow_c.set_upstream(flow_a)
     flow_c.set_upstream(flow_b)
     flow_d.set_upstream(flow_c)

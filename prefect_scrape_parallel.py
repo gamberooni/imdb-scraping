@@ -118,7 +118,7 @@ def main():
         scrapeAndUpload(merged_all_links, object_prefix)
 
     flow.register("imdb-scraping")
-    flow.run()
+    # flow.run()
 
 
 if __name__ == "__main__":
