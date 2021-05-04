@@ -96,5 +96,6 @@ python prefect_parent_flow.py
 ```
 
 The `prefect_parent_flow.py` is used to run a `Flow-of-Flows` and runs on a schedule that you can set and it is turned on by default. 
+![prefect-flow](./images/prefect-flow.png)
 
 **__NOTE:__** There are still some bits and pieces of work to do in refactoring the code. For example, factor out the use of Celery and Redis in the scraping and uploading job, and breaking down the populate db job into smaller separate functions for `Dask` to parallelize the execution more efficiently. 
