@@ -1,7 +1,7 @@
 # IMDb Scraping
 
 ## Introduction
-This repo performs web scraping on the IMDb website using `BeautifulSoup4`, particularly on Anime titles (who doesn't like Animes, duh!). Data of each of the Anime titles are uploaded to `MinIO` as JSON files, where each JSON file contains data of 5 titles. The `populate_db_parallel.py` script will read these JSON files and populate the `PostgreSQL` database with the [following schema](#database-schema). Finally, `Grafana` pulls the data from `PostgreSQL` for us to visualize the data.
+This repo performs web scraping on the IMDb website using `BeautifulSoup4`, particularly on Anime titles (who doesn't like Animes, duh!). Data of each of the Anime titles are uploaded to `MinIO` as JSON files, where each JSON file contains data of 5 titles. The `populate_db_parallel.py` script will read these JSON files and populate the `PostgreSQL` database with the [following schema](#database-schema). Finally, `Grafana` pulls the data from `PostgreSQL` for us to visualize the data. There are four general steps in this workflow: create bucket, create schema, scrape and upload to MinIO, and finally populate Postgres database using data stored in MinIO. This workflow is orchestrated using `Prefect`.
 
 ## IMPORTANT
 1. Intensive web scraping can cause heavy load on the IMDb servers. You can get blocked from accessing IMDb website if you intend to speed up the scraping jobs by creating more processes. The script currently uses 2 * number of CPUs (my total CPUs = 12) and it seems alright...
@@ -9,9 +9,15 @@ This repo performs web scraping on the IMDb website using `BeautifulSoup4`, part
 2. These scripts work for the current IMDb Title page layout at this time of writing (18 April 2021). The IMDb team is working on updates to the Title page and it is highly likely that these scripts may not work after the update...
 
 ## Grafana Dashboard
-An example dashboard that I decided to come up with. 
+An example `Grafana` dashboard that I decided to come up with. 
 
 ![dashboard](./images/dashboard.png)
+
+Visit the dashboard at `localhost:3001` and login using:
+```
+username: admin
+password: password
+```
 
 ## React App
 I thought that the `Top 10 Best Anime All Time` table was too ugly so I decided to develop a Grafana `Panel` plugin to replace it. From there I figured out I needed to learn `React` (also means I have to pickup `JavaScript`) to create the plugin. 
@@ -64,14 +70,13 @@ $ docker-compose up -d
 6. create_schema.py
 7. populate_db_parallel.py
 
-## Grafana Dashboard
-Visit `Grafana` dashboard at `localhost:3000` and login using:
-```
-username: admin
-password: password
-```
 
-## Using Prefect
+## Prefect as Workflow Orchestrator
+[Prefect](https://www.prefect.io/) is used to orchestrate the workflow. You can visit the Prefect UI at localhost:8080. 
+
+I had a little experience of using Airflow. Initially I thought of using `Airflow`, but Airflow's data transfer between operators relies on Xcoms, which is a bit awkward in my opinion. I decided to experiment with Prefect, and I think the data transfer is more intuitive and natural, but its documentation should show some common data workflow examples so that it is easier to get started. It is a great tool nonetheless. 
+
+### Steps
 1. Activate Python venv
 2. Use Prefect backend server
 > prefect backend server
@@ -81,5 +86,15 @@ password: password
 > prefect agent local start
 5. Create prefect project
 > prefect create project "imdb-scraping"
+6. Register each of the Prefect `flow` into the Prefect backend server:
+```
+python prefect_create_bucket.py
+python prefect_create_schema.py
+python prefect_scrape_parallel.py
+python prefect_populate_db_parallel.py
+python prefect_parent_flow.py
+```
 
-**__NOTE:__** Maybe need to refactor multiprocessing module with dask. Refer to this [issue](https://github.com/PrefectHQ/prefect/issues/2634)
+The `prefect_parent_flow.py` is used to run a `Flow-of-Flows` and runs on a schedule that you can set and it is turned on by default. 
+
+**__NOTE:__** There are still some bits and pieces of work to do in refactoring the code. For example, factor out the use of Celery and Redis in the scraping and uploading job, and breaking down the populate db job into smaller separate functions for `Dask` to parallelize the execution more efficiently. 

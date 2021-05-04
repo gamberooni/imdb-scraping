@@ -5,18 +5,14 @@ import pendulum
 import datetime
 
 
-# weekly_monday = CronSchedule(
-#     "0 22 * * 1", start_date=pendulum.now()
-# )
-
 weekly_monday = CronSchedule(
-    "40 00 * * *", start_date=pendulum.now()
+    "0 22 * * 1", start_date=pendulum.now()
 )
 
 scrape_date = Parameter('scrape_date', default=str(datetime.datetime.now().date()) + "/")
 
-flow_a = StartFlowRun(flow_name="create_bucket", project_name="imdb-scraping", wait=True)
-flow_b = StartFlowRun(flow_name="create_schema", project_name="imdb-scraping", wait=True)
+flow_a = StartFlowRun(flow_name="create_bucket", project_name="imdb-scraping")
+flow_b = StartFlowRun(flow_name="create_schema", project_name="imdb-scraping")
 flow_c = StartFlowRun(flow_name="scrape", project_name="imdb-scraping", wait=True)
 flow_d = StartFlowRun(flow_name="populate_db", project_name="imdb-scraping", wait=True)
 

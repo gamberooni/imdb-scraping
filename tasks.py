@@ -26,7 +26,6 @@ client = Minio(
     )
 
 bucket_name = BUCKET_NAME
-assert client.bucket_exists(bucket_name), f"Bucket '{bucket_name}' does not exist."
 
 def getCrewData(url):
     crew_data = {
